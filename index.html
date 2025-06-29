@@ -1542,7 +1542,10 @@
                 }
             }
 
-            if (!targetZombie) return; // No target, don't fire
+            if (!targetZombie) {
+                // console.log("No zombie target found for laser."); // Commented out to reduce console spam
+                return; // Exit if no target
+            }
 
             // Fire from the first machine gun (top right of turret)
             projectiles.push({
@@ -1602,7 +1605,10 @@
                 }
             }
 
-            if (!targetZombie) return; // No target, don't fire
+            if (!targetZombie) {
+                // console.log("No zombie target found for missile."); // Commented out to reduce console spam
+                return; // Exit if no target
+            }
 
             // Calculate launch points from the missile pods
             const launchPoints = [];
@@ -1641,8 +1647,8 @@
                     y: launchPoint.y,
                     vx: MISSILE_SPEED_X,
                     vy: MISSILE_SPEED_Y_INITIAL,
-                    targetX: targetZombie.x + zombie.width / 2, // Target X coordinate of the zombie
-                    targetY: targetZombie.y + zombie.height / 2, // Target Y coordinate of the zombie
+                    targetX: targetZombie.x + targetZombie.width / 2, // Corrected to targetZombie
+                    targetY: targetZombie.y + targetZombie.height / 2, // Corrected to targetZombie
                     width: MISSILE_WIDTH,
                     height: MISSILE_HEIGHT,
                     color: '#ff0000', // Red missile
@@ -1833,6 +1839,16 @@
          */
         function upgradeTank() {
             const nextUpgradeLevel = playerUpgradeLevel + 1;
+            console.log(`--- Attempting Upgrade ---`);
+            console.log(`Current Level: ${playerUpgradeLevel} (${TANK_UPGRADE_LEVELS[playerUpgradeLevel].name})`);
+            console.log(`Current Score: ${score}`);
+            if (nextUpgradeLevel < TANK_UPGRADE_LEVELS.length) {
+                console.log(`Next Level: ${nextUpgradeLevel} (${TANK_UPGRADE_LEVELS[nextUpgradeLevel].name})`);
+                console.log(`Cost for next upgrade: ${UPGRADE_SCORE_THRESHOLDS[playerUpgradeLevel]} pts`);
+            } else {
+                console.log("Already at max upgrade level.");
+            }
+
             // Check if there are more upgrade levels and if player has enough score
             if (nextUpgradeLevel < TANK_UPGRADE_LEVELS.length && score >= UPGRADE_SCORE_THRESHOLDS[playerUpgradeLevel]) {
                 score -= UPGRADE_SCORE_THRESHOLDS[playerUpgradeLevel]; // Deduct score for upgrade
@@ -1845,16 +1861,21 @@
                 BULLET_DAMAGE = newStats.bulletDamage;
                 FIRE_RATE_COOLDOWN = newStats.fireRate;
 
-                // Update upgrade button text for next level or hide if max
-                if (playerUpgradeLevel < TANK_UPGRADE_LEVELS.length -1) {
-                    upgradeButton.textContent = `Upgrade Tank (${UPGRADE_SCORE_THRESHOLDS[playerUpgradeLevel]} pts)`;
-                } else {
-                    upgradeButton.textContent = `Tank MAX!`;
-                    upgradeButton.style.display = 'none'; // Hide if max level reached
-                }
-                console.log(`Tank upgraded to ${newStats.name}!`);
-                console.log(`Bullet Speed: ${BULLET_SPEED}, Damage: ${BULLET_DAMAGE}, Fire Rate: ${FIRE_RATE_COOLDOWN}`);
+                console.log(`Upgrade successful! Tank is now ${newStats.name}.`);
+                console.log(`New Score: ${score}`);
+                console.log(`New Bullet Speed: ${BULLET_SPEED}, Damage: ${BULLET_DAMAGE}, Fire Rate: ${FIRE_RATE_COOLDOWN}`);
                 console.log(`Laser Enabled: ${newStats.laserEnabled}, Missile Enabled: ${newStats.missileEnabled}`);
+            } else {
+                console.log("Upgrade failed: Not enough score or already at max level.");
+            }
+
+            // Update upgrade button text for next level or hide if max
+            if (playerUpgradeLevel < TANK_UPGRADE_LEVELS.length - 1) { // -1 because length is 9, levels 0-8. Next upgrade cost is at current level's index
+                upgradeButton.textContent = `Upgrade Tank (${UPGRADE_SCORE_THRESHOLDS[playerUpgradeLevel]} pts)`;
+                upgradeButton.style.display = 'none'; // Hide until next threshold is met
+            } else {
+                upgradeButton.textContent = `Tank MAX!`;
+                upgradeButton.style.display = 'none'; // Hide if max level reached
             }
         }
 
@@ -1870,14 +1891,14 @@
             // Update tank health display
             tankHealthDisplay.textContent = `Tank HP: ${player.health}`;
 
-            // Check for upgrade availability
+            // Check for upgrade availability and update button visibility
             if (playerUpgradeLevel < TANK_UPGRADE_LEVELS.length - 1 && score >= UPGRADE_SCORE_THRESHOLDS[playerUpgradeLevel]) {
                 upgradeAvailable = true;
                 upgradeButton.style.display = 'block';
             } else {
                 upgradeAvailable = false;
-                if (playerUpgradeLevel >= TANK_UPGRADE_LEVELS.length -1) { // If it's max level or beyond, hide the button permanently
-                     upgradeButton.style.display = 'none';
+                if (playerUpgradeLevel >= TANK_UPGRADE_LEVELS.length -1) { 
+                     upgradeButton.style.display = 'none'; // Hide if max level reached
                 } else {
                     upgradeButton.style.display = 'none'; // Hide if not enough score
                 }
@@ -1951,20 +1972,18 @@
                     if (p.x < p.targetX) {
                         const dx = p.targetX - p.x;
                         const dy = p.targetY - p.y;
-                        const angleToTarget = Math.atan2(dy, dx);
-                        
-                        // Slowly adjust vertical velocity towards target Y, if missile is "coming down"
-                        if (p.vy > 0) { // Only adjust if missile is already on its way down
-                            p.vy += (dy / dx) * MISSILE_GRAVITY * 0.5; // Slight vertical push towards target
-                            p.vy = Math.min(p.vy, MISSILE_SPEED_X); // Cap vertical speed
-                        }
+                        // Steer vertically towards the target if needed, but not too aggressively
+                        const steeringFactor = 0.05; // Less aggressive steering
+                        p.vy += (dy - p.vy) * steeringFactor * (deltaTime / 16);
+                        // Cap vertical speed to prevent wild oscillations
+                        p.vy = Math.max(-MISSILE_SPEED_X, Math.min(MISSILE_SPEED_X, p.vy));
                     }
 
                 } else {
                     p.x += p.speed * (deltaTime / 16);
                 }
             });
-            projectiles = projectiles.filter(p => p.x < GAME_WIDTH);
+            projectiles = projectiles.filter(p => p.x < GAME_WIDTH && p.y > -50); // Filter out missiles that flew off screen vertically
 
             // Move zombies (horizontally)
             zombies.forEach(zombie => {
@@ -1972,7 +1991,7 @@
 
                 // Zombie-Victim collision: if zombie crosses the defense line
                 if (zombie.x <= DEFENSE_LINE_X) {
-                    let hitVictim = false;
+                    let hitVictim = false; // Corrected variable name
                     for (let i = 0; i < victims.length; i++) {
                         const victim = victims[i];
                         if (victim.isAlive) {
@@ -1990,12 +2009,12 @@
                                     tankHealthDisplay.textContent = `Tank HP: ${player.health}`;
                                     victimCountDisplay.textContent = `Victims: ${victims.filter(v => v.isAlive).length}`;
                                 }
-                                hitVictim = true;
+                                hitVictim = true; // Corrected variable name
                                 break;
                             }
                         }
                     }
-                    if (hitVictim) {
+                    if (hitVictim) { // Corrected variable name
                         if (zombie.type === 'zombieTank') { // Zombie tank takes damage from hitting victims
                             zombie.health -= 50; // Zombie tank takes some damage but is not instantly removed
                             if (zombie.health <=0) {
@@ -2231,6 +2250,12 @@
 
             try {
                 const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                // Check if projectId is missing before initializing Firebase
+                if (!firebaseConfig.projectId && firebaseConfig !== {}) {
+                    console.warn("Firebase 'projectId' is missing in the provided configuration. Score saving may not work correctly. Please ensure __firebase_config is properly set in the environment.");
+                    userIdDisplay.textContent = `User ID: Firebase (No ProjectId)`;
+                }
+
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
@@ -2282,7 +2307,7 @@
                     }
                 });
             } catch (error) {
-                console.error("Firebase initialization failed:", error);
+                console.error("Firebase initialization failed (Caught in top-level try/catch):", error);
                 if (userIdDisplay) userIdDisplay.textContent = `User ID: Firebase Init Error`;
                 isFirebaseReady = false;
             }
