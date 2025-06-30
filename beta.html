@@ -1,0 +1,2641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zombie Hunter: Modern Tank Defense</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #1a1a1a;
+            margin: 0;
+            font-family: 'Press Start 2P', cursive;
+            overflow: hidden;
+            color: #eee;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .game-container {
+            position: relative;
+            background-color: #333;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 5px solid #8b0000;
+            margin-bottom: 20px;
+            overflow: hidden; /* Ensure elements don't spill outside */
+        }
+
+        h1 {
+            color: #ff4500;
+            margin-bottom: 20px;
+            font-size: 2em;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        canvas {
+            background-color: #444; /* This will be covered by drawBackground */
+            display: block;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.7);
+            border: 2px solid #555;
+            cursor: default;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #eee;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .game-info > div {
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+        }
+
+        .instructions {
+            margin-top: 15px;
+            font-size: 0.8em;
+            color: #bbb;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1em;
+            font-family: 'Press Start 2P', cursive;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(145deg, #2ecc71, #27ae60);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease-in-out;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: linear-gradient(145deg, #27ae60, #2ecc71);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        button.restart {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+        }
+
+        button.restart:hover {
+            background: linear-gradient(145deg, #c0392b, #e74c3c);
+        }
+
+        button.upgrade {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+        }
+        button.upgrade:hover {
+            background: linear-gradient(145deg, #2980b9, #3498db);
+        }
+         button.shop-button {
+            background: linear-gradient(145deg, #9b59b6, #8e44ad); /* Purple */
+        }
+        button.shop-button:hover {
+            background: linear-gradient(145deg, #8e44ad, #9b59b6);
+        }
+         button.pause-button {
+            background: linear-gradient(145deg, #f1c40f, #f39c12); /* Yellow/Orange */
+            display: none; /* Hidden until game starts */
+        }
+        button.pause-button:hover {
+            background: linear-gradient(145deg, #f39c12, #f1c40f);
+        }
+
+
+        #game-over-screen, #start-screen, #shop-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            z-index: 10;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #e74c3c;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        #start-screen {
+            color: #2ecc71;
+        }
+
+        #start-screen h2 {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+        }
+
+        #start-screen .difficulty-buttons button {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            margin: 10px;
+        }
+        #start-screen .difficulty-buttons button:hover {
+            background: linear-gradient(145deg, #2980b9, #3498db);
+        }
+
+        #shop-screen {
+            color: #9b59b6;
+            font-size: 1.2em;
+            justify-content: flex-start;
+            padding-top: 50px;
+            box-sizing: border-box;
+        }
+        #shop-screen h2 {
+            margin-bottom: 20px;
+            color: #fff;
+            font-size: 1.5em;
+        }
+        #shop-screen .shop-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            width: 90%;
+            max-width: 600px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .shop-item {
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid #9b59b6;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.4);
+        }
+        .shop-item h3 {
+            font-size: 1em;
+            margin-top: 0;
+            color: #eee;
+            margin-bottom: 10px;
+        }
+        .shop-item p {
+            font-size: 0.8em;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+        .shop-item button {
+            background: linear-gradient(145deg, #2ecc71, #27ae60);
+            width: 100%;
+            font-size: 0.8em;
+            padding: 8px;
+        }
+         .shop-item button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        #game-over-screen h2 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+            color: #eee;
+            text-transform: uppercase;
+        }
+
+        #userIdDisplay {
+            font-size: 0.7em;
+            color: #7f8c8d;
+            margin-top: 10px;
+        }
+
+        /* Mobile Controls Styling - Always visible now */
+        .mobile-controls {
+            display: flex; /* Always display mobile controls */
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .mobile-controls .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(2, 60px);
+            gap: 5px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .mobile-controls .dpad button {
+            width: 60px;
+            height: 60px;
+            padding: 0;
+            font-size: 1.5em;
+            background: linear-gradient(145deg, #444, #222);
+            color: #00ffff;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.5);
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.1s ease-in-out;
+        }
+        .mobile-controls .dpad button:active {
+            background: linear-gradient(145deg, #00ffff, #00aaaa);
+            color: #222;
+        }
+
+        /* Grid placement for D-pad */
+        .mobile-controls .dpad button:nth-child(1) { grid-column: 1; grid-row: 1; }
+        .mobile-controls .dpad button:nth-child(2) { grid-column: 2; grid-row: 1; }
+        .mobile-controls .dpad button:nth-child(3) { grid-column: 3; grid-row: 1; }
+        .mobile-controls .dpad button:nth-child(4) { grid-column: 1; grid-row: 2; }
+        .mobile-controls .dpad button:nth-child(5) { grid-column: 2; grid-row: 2; }
+        .mobile-controls .dpad button:nth-child(6) { grid-column: 3; grid-row: 2; }
+
+        /* Specific shoot button if not part of dpad */
+        .mobile-controls .shoot-button button {
+            min-width: 100px;
+            height: 100px;
+            font-size: 1.8em;
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            color: white;
+            border: 2px solid #ff0000;
+            border-radius: 50%;
+            margin-left: 20px;
+        }
+        .mobile-controls .shoot-button button:active {
+            background: linear-gradient(145deg, #c0392b, #e74c3c);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Zombie Hunter: Modern Tank Defense</h1>
+        <canvas id="gameCanvas"></canvas>
+        <div class="game-info">
+            <div id="scoreDisplay">Score: 0</div>
+            <div id="bestScoreDisplay">Best Score: 0</div>
+            <div id="tankHealthDisplay">Tank HP: 100</div>
+            <div id="victimCountDisplay">Victims: 1</div>
+            <div id="waveDisplay">Wave: 1</div>
+            <div id="difficultyDisplay">Difficulty: Easy</div>
+        </div>
+        <div id="userIdDisplay">User ID: Loading...</div>
+
+        <div class="button-group">
+            <button id="startButton" style="display: none;">Start Game</button>
+            <button id="pauseButton" class="pause-button">Pause</button>
+            <button id="shopButton" class="shop-button">Shop</button>
+            <button id="upgradeButton" class="upgrade">Upgrade Tank (500 pts)</button>
+            <button id="restartButton" class="restart" style="display: none;">Restart Game</button>
+        </div>
+
+        <!-- Mobile Controls -->
+        <div class="mobile-controls">
+            <div class="dpad">
+                <button id="moveUpBtn">▲</button>
+                <div style="grid-column: 2; grid-row: 1;"></div>
+                <button id="moveDownBtn">▼</button>
+                <button id="moveLeftBtn">◀</button>
+                <div style="grid-column: 2; grid-row: 2;"></div>
+                <button id="moveRightBtn">▶</button>
+            </div>
+            <div class="shoot-button">
+                <button id="shootBtn">FIRE</button>
+            </div>
+        </div>
+
+
+        <div id="game-over-screen" style="display: none;">
+            <h2>Game Over!</h2>
+            <div id="final-score"></div>
+            <div id="game-over-wave"></div>
+            <div id="final-best-score"></div>
+        </div>
+
+        <div id="start-screen">
+            <h2>Select Difficulty</h2>
+            <div class="difficulty-buttons">
+                <button id="easyModeBtn">Easy</button>
+                <button id="mediumModeBtn">Medium</button>
+                <button id="hardModeBtn">Hard</button>
+            </div>
+        </div>
+
+        <div id="shop-screen" style="display: none;">
+            <h2>Shop</h2>
+            <div class="shop-items">
+                <div class="shop-item">
+                    <h3>Health Pack</h3>
+                    <p>Restore 50 HP</p>
+                    <p>Cost: 100 pts</p>
+                    <button id="buyHealthPackBtn">Buy</button>
+                </div>
+                <div class="shop-item">
+                    <h3>Reinforced Wall</h3>
+                    <p>Build a defensive wall</p>
+                    <p>Cost: 250 pts</p>
+                    <button id="buyWallBtn">Buy</button>
+                </div>
+                <div class="shop-item">
+                    <h3>Temporary Overcharge</h3>
+                    <p>Double damage for 15s</p>
+                    <p>Cost: 150 pts</p>
+                    <button id="buyOverchargeBtn">Buy</button>
+                </div>
+                 <div class="shop-item">
+                    <h3>Automated UAV</h3>
+                    <p>Lasers target all zombies for 10s</p>
+                    <p>Cost: 200 pts</p>
+                    <button id="buyUAVBtn">Buy</button>
+                </div>
+            </div>
+            <button id="closeShopButton">Close Shop</button>
+        </div>
+
+
+        <div class="instructions">
+            Desktop: Use Left/Right/Up/Down arrow keys or 'A'/'D'/'W'/'S' to move the tank. Click/Spacebar for Main Cannon. 'M' for Machine Guns (Lasers). 'R' for Missiles. Protect the victims!
+            <br>
+            Mobile: Use on-screen D-pad and FIRE button (Main Cannon). Other weapons are automatic.
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Variables (declared early to ensure availability) ---
+        let app;
+        let db;
+        let auth;
+        let userId;
+        let isFirebaseReady = false;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let initialAuthCheckCompleted = false;
+
+        // --- Game Configuration (declared early to ensure availability) ---
+        const GAME_WIDTH = 800;
+        const GAME_HEIGHT = 450;
+        const GROUND_Y = GAME_HEIGHT * 0.7;
+        const STREET_MIN_Y_DRAW = GROUND_Y + 5;
+        const STREET_MAX_Y_DRAW = GAME_HEIGHT - 10;
+
+        const TANK_WIDTH = 130;
+        const TANK_HEIGHT = 80;
+        let TANK_MOVE_SPEED = 4;
+        let PLAYER_COLLISION_DAMAGE_TO_ZOMBIE = 50; // Damage when tank hulls a zombie
+        let PLAYER_HP_REGEN_PER_HP_PACK = 50; // Health restored by a health pack
+
+        const BULLET_RADIUS = 6;
+        let BULLET_SPEED = 20;
+        let BULLET_DAMAGE = 10;
+        let FIRE_RATE_COOLDOWN = 150;
+
+        const LASER_WIDTH = 25;
+        const LASER_HEIGHT = 4;
+        let LASER_DAMAGE = 5;
+        const LASER_SPEED = 30;
+        let LASER_COOLDOWN = 100;
+
+        const MISSILE_WIDTH = 30;
+        const MISSILE_HEIGHT = 10;
+        let MISSILE_DAMAGE = 40;
+        const MISSILE_SPEED_X = 8;
+        const MISSILE_SPEED_Y_INITIAL = -15;
+        const MISSILE_GRAVITY = 0.5;
+        let MISSILE_COOLDOWN = 1000;
+
+        const ZOMBIE_WIDTH = 50;
+        const ZOMBIE_HEIGHT = 80;
+        let ZOMBIE_INITIAL_SPEED = 0.5;
+        let ZOMBIE_INITIAL_HEALTH = 30;
+        let ZOMBIE_SPAWN_INTERVAL = 1500;
+        let ZOMBIE_DAMAGE_TO_VICTIM = 20;
+
+        const ZOMBIE_TANK_WIDTH = 180;
+        const ZOMBIE_TANK_HEIGHT = 100;
+        let ZOMBIE_TANK_HEALTH = 500;
+        let ZOMBIE_TANK_SPEED = 0.3;
+        const ZOMBIE_TANK_SPAWN_WAVE = 7;
+        let ZOMBIE_TANK_SPAWN_CHANCE = 0.15;
+        const ZOMBIE_TANK_FIRE_RATE = 2000; // Zombie tank fires every 2 seconds
+        const ZOMBIE_TANK_PROJECTILE_SIZE = 15;
+        const ZOMBIE_TANK_PROJECTILE_SPEED = 5;
+        let ZOMBIE_TANK_PROJECTILE_DAMAGE = 15;
+
+        let MAX_TANK_HEALTH = 100;
+        const VICTIM_INITIAL_COUNT = 1;
+        let VICTIM_DAMAGE_PER_ZOMBIE = 20;
+        const VICTIM_WIDTH = 30;
+        const VICTIM_HEIGHT = 60;
+        const VICTIM_Y = GROUND_Y - VICTIM_HEIGHT + (STREET_MAX_Y_DRAW - GROUND_Y - VICTIM_HEIGHT) / 2;
+
+        const DEFENSE_LINE_X = 100; // Line zombies cannot cross without hitting a victim/wall
+
+        const WALL_WIDTH = 40;
+        const WALL_HEIGHT = 80;
+        const WALL_HEALTH = 200;
+        const WALL_Y = GROUND_Y - WALL_HEIGHT + (STREET_MAX_Y_DRAW - GROUND_Y - WALL_HEIGHT) / 2;
+
+
+        // Upgrade Config (tank levels)
+        const TANK_UPGRADE_LEVELS = [
+            { barrelLength: TANK_WIDTH * 0.4, bulletSpeed: 20, bulletDamage: 10, fireRate: 150, name: "Basic Tank", laserEnabled: false, missileEnabled: false },
+            { barrelLength: TANK_WIDTH * 0.5, bulletSpeed: 25, bulletDamage: 15, fireRate: 130, name: "Tank Mk.I", laserEnabled: false, missileEnabled: false },
+            { barrelLength: TANK_WIDTH * 0.6, bulletSpeed: 30, bulletDamage: 20, fireRate: 110, name: "Tank Mk.II", laserEnabled: true, missileEnabled: false }, // MG added
+            { barrelLength: TANK_WIDTH * 0.7, bulletSpeed: 35, bulletDamage: 25, fireRate: 90, name: "Tank Mk.III", laserEnabled: true, missileEnabled: false }, // Dual MG
+            { barrelLength: TANK_WIDTH * 0.8, bulletSpeed: 40, bulletDamage: 30, fireRate: 70, name: "Tank Mk.IV", laserEnabled: true, missileEnabled: true }, // Missile Pods added
+            { barrelLength: TANK_WIDTH * 0.9, bulletSpeed: 45, bulletDamage: 35, fireRate: 50, name: "Tank Mk.V", laserEnabled: true, missileEnabled: true },
+            { barrelLength: TANK_WIDTH, bulletSpeed: 50, bulletDamage: 40, fireRate: 40, name: "Tank Mk.VI", laserEnabled: true, missileEnabled: true }, // Additional missile pods
+            { barrelLength: TANK_WIDTH * 1.1, bulletSpeed: 55, bulletDamage: 45, fireRate: 30, name: "Tank Mk.VII", laserEnabled: true, missileEnabled: true },
+            { barrelLength: TANK_WIDTH * 1.2, bulletSpeed: 60, bulletDamage: 50, fireRate: 20, name: "Tank Mk.MAX", laserEnabled: true, missileEnabled: true }
+        ];
+        let playerUpgradeLevel = 0;
+
+        const UPGRADE_SCORE_THRESHOLDS = [100, 200, 300, 400, 500, 600, 700, 800];
+
+        const ZOMBIE_VISUAL_TIERS = [
+            { wave: 1, name: "Shambler" },
+            { wave: 3, name: "Groaner" },
+            { wave: 6, name: "Fleshpound" },
+            { wave: 10, name: "Crawler" }
+        ];
+        let currentZombieTier = 0;
+
+        const BACKGROUND_THEMES = [
+            { wave: 1, name: "Day", sky: ['#1a2a3a', '#4a3a40', '#6a5a40'], ruins: '#111', street: '#3a3a3a', lines: '#f1c40f', curb: '#222' },
+            { wave: 5, name: "Sunset", sky: ['#4a0e00', '#8c2f00', '#bf7a00'], ruins: '#220000', street: '#3a3a3a', lines: '#ffa500', curb: '#222' },
+            { wave: 10, name: "Night", sky: ['#050a1a', '#101a2a', '#202a3a'], ruins: '#000000', street: '#202020', lines: '#7f8c8d', curb: '#111' },
+            { wave: 15, name: "Sunrise", sky: ['#1a2a3a', '#5a4a3a', '#8c7a6a'], ruins: '#222', street: '#3a3a3a', lines: '#f1c40f', curb: '#222' }
+        ];
+        let currentBackgroundThemeIndex = 0;
+
+        // Difficulty settings
+        const DIFFICULTIES = {
+            'easy': {
+                initialTankHealth: 150,
+                zombieInitialSpeed: 0.4,
+                zombieInitialHealth: 25,
+                zombieSpawnInterval: 1800,
+                zombieDamageToVictim: 15,
+                zombieTankSpawnChance: 0.1,
+                zombieTankProjectileDamage: 10,
+                playerCollisionDamageToZombie: 70,
+                scoreMultiplier: 1.0
+            },
+            'medium': {
+                initialTankHealth: 100,
+                zombieInitialSpeed: 0.5,
+                zombieInitialHealth: 30,
+                zombieSpawnInterval: 1500,
+                zombieDamageToVictim: 20,
+                zombieTankSpawnChance: 0.15,
+                zombieTankProjectileDamage: 15,
+                playerCollisionDamageToZombie: 50,
+                scoreMultiplier: 1.5
+            },
+            'hard': {
+                initialTankHealth: 75,
+                zombieInitialSpeed: 0.6,
+                zombieInitialHealth: 40,
+                zombieSpawnInterval: 1200,
+                zombieDamageToVictim: 25,
+                zombieTankSpawnChance: 0.2,
+                zombieTankProjectileDamage: 20,
+                playerCollisionDamageToZombie: 30,
+                scoreMultiplier: 2.0
+            }
+        };
+        let currentDifficulty = 'medium'; // Default difficulty
+
+
+        // --- Game State Variables ---
+        let player = {
+            x: GAME_WIDTH / 4,
+            y: STREET_MIN_Y_DRAW + (STREET_MAX_Y_DRAW - STREET_MIN_Y_DRAW) / 2 - TANK_HEIGHT / 2,
+            width: TANK_WIDTH,
+            height: TANK_HEIGHT,
+            health: MAX_TANK_HEALTH,
+            maxHealth: MAX_TANK_HEALTH, // Store max health for health packs
+            currentPrimaryCooldown: 0,
+            currentLaserCooldown: 0,
+            currentMissileCooldown: 0,
+            canFirePrimary: true,
+            canFireLaser: true,
+            canFireMissile: true,
+            barrelLength: TANK_UPGRADE_LEVELS[0].barrelLength,
+            isMovingLeft: false,
+            isMovingRight: false,
+            isMovingUp: false,
+            isMovingDown: false,
+            temporaryDamageBoostActive: false,
+            temporaryDamageBoostEndTime: 0,
+            uavActive: false,
+            uavEndTime: 0
+        };
+
+        let victims = [];
+        let walls = []; // Array to hold wall objects
+        let projectiles = [];
+        let zombies = [];
+        let explosions = [];
+        let bloodParticles = [];
+        let score = 0;
+        let bestScore = 0;
+        let currentWave = 1;
+        let gameOver = false;
+        let gameRunning = false;
+        let gamePaused = false; // New state for pause
+        let lastZombieSpawnTime = 0;
+        let animationFrameId;
+        let zombieSpeed = ZOMBIE_INITIAL_SPEED;
+        let zombieSpawnRate = ZOMBIE_SPAWN_INTERVAL;
+        let lastUpdateTime = 0;
+        let treadOffset = 0;
+        const TREAD_ANIMATION_SPEED = 0.5;
+        let upgradeAvailable = false;
+        let tankUpgraded = false;
+
+        // --- Shop Item Costs ---
+        const SHOP_ITEMS = {
+            healthPack: { cost: 100, effect: 'Restore 50 HP' },
+            reinforcedWall: { cost: 250, effect: 'Build a defensive wall' },
+            temporaryOvercharge: { cost: 150, duration: 15000, effect: 'Double damage for 15s' },
+            automatedUAV: { cost: 200, duration: 10000, effect: 'Lasers target all zombies for 10s' }
+        };
+
+
+        // --- Blood Particle Variables ---
+        const BLOOD_PARTICLE_COUNT = 20;
+        const BLOOD_PARTICLE_SIZE_MIN = 2;
+        const BLOOD_PARTICLE_SIZE_MAX = 6;
+        const BLOOD_PARTICLE_SPEED_MAX = 8;
+        const BLOOD_PARTICLE_LIFESPAN = 35;
+
+        // --- Explosion Particle Variables ---
+        const EXPLOSION_PARTICLE_COUNT = 30;
+        const EXPLOSION_PARTICLE_SIZE_MIN = 5;
+        const EXPLOSION_PARTICLE_SIZE_MAX = 15;
+        const EXPLOSION_PARTICLE_SPEED_MAX = 10;
+        const EXPLOSION_PARTICLE_LIFESPAN = 40;
+
+
+        // --- DOM Element References ---
+        let canvas, ctx, scoreDisplay, bestScoreDisplay, tankHealthDisplay, victimCountDisplay, waveDisplay,
+            startButton, upgradeButton, restartButton, gameOverScreen, finalScoreDisplay, gameOverWaveDisplay,
+            finalBestScoreDisplay, userIdDisplay, moveUpBtn, moveDownBtn, moveLeftBtn, moveRightBtn, shootBtn,
+            startScreen, easyModeBtn, mediumModeBtn, hardModeBtn, difficultyDisplay, pauseButton, shopButton,
+            shopScreen, closeShopButton, buyHealthPackBtn, buyWallBtn, buyOverchargeBtn, buyUAVBtn;
+
+
+        // --- Utility Functions ---
+
+        /**
+         * Darkens a given hex color by a specified percentage.
+         */
+        function darkenColor(hex, percent) {
+            let f=parseInt(hex.slice(1),16),t=percent<0?0:255,p=percent<0?percent*-1:percent,R=f>>16,G=(f>>8)&0x00FF,B=(f)&0x0000FF;
+            return "#"+(0x1000000+(Math.round((t-R)*p/100)+R)*0x10000+(Math.round((t-G)*p/100)+G)*0x100+(Math.round((t-B)*p/100)+B)).toString(16).slice(1);
+        }
+
+        /**
+         * Draws a health bar.
+         */
+        function drawHealthBar(x, y, width, height, currentHealth, maxHealth, fillColor) {
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, width, height);
+
+            const healthWidth = (currentHealth / maxHealth) * width;
+            ctx.fillStyle = fillColor;
+            ctx.fillRect(x, y, healthWidth, height);
+        }
+
+        // --- Game Drawing Functions ---
+
+        /**
+         * Draws the highly detailed background based on the current theme.
+         */
+        function drawBackground() {
+            const theme = BACKGROUND_THEMES[currentBackgroundThemeIndex];
+
+            // Sky
+            let skyGradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT * 0.7);
+            skyGradient.addColorStop(0, theme.sky[0]);
+            skyGradient.addColorStop(0.5, theme.sky[1]);
+            skyGradient.addColorStop(1, theme.sky[2]);
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            // Distant city silhouette - more detailed ruins
+            ctx.fillStyle = theme.ruins;
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND_Y);
+            ctx.lineTo(0, GROUND_Y - 50);
+            ctx.lineTo(50, GROUND_Y - 80);
+            ctx.lineTo(80, GROUND_Y - 60);
+            ctx.lineTo(120, GROUND_Y - 100);
+            ctx.lineTo(150, GROUND_Y - 70);
+            ctx.lineTo(200, GROUND_Y - 90);
+            ctx.lineTo(250, GROUND_Y - 40);
+            ctx.lineTo(300, GROUND_Y - 120);
+            ctx.lineTo(350, GROUND_Y - 80);
+            ctx.lineTo(400, GROUND_Y - 110);
+            ctx.lineTo(450, GROUND_Y - 60);
+            ctx.lineTo(500, GROUND_Y - 90);
+            ctx.lineTo(550, GROUND_Y - 70);
+            ctx.lineTo(600, GROUND_Y - 100);
+            ctx.lineTo(650, GROUND_Y - 50);
+            ctx.lineTo(700, GROUND_Y - 80);
+            ctx.lineTo(GAME_WIDTH, GROUND_Y - 60);
+            ctx.lineTo(GAME_WIDTH, GROUND_Y);
+            ctx.closePath();
+            ctx.fill();
+
+            // Ground - asphalt street
+            ctx.fillStyle = theme.street;
+            ctx.fillRect(0, GROUND_Y, GAME_WIDTH, GAME_HEIGHT - GROUND_Y);
+
+            // Street markings (dashed lines)
+            ctx.fillStyle = theme.lines;
+            const lineDashLength = 20;
+            const lineDashGap = 30;
+            const lineCount = Math.floor(GAME_WIDTH / (lineDashLength + lineDashGap));
+
+            let laneY1 = STREET_MIN_Y_DRAW + (STREET_MAX_Y_DRAW - STREET_MIN_Y_DRAW) * 0.25;
+            for (let i = 0; i < lineCount; i++) {
+                ctx.fillRect(i * (lineDashLength + lineDashGap), laneY1, lineDashLength, 4);
+            }
+            let laneY2 = STREET_MIN_Y_DRAW + (STREET_MAX_Y_DRAW - STREET_MIN_Y_DRAW) * 0.5;
+            for (let i = 0; i < lineCount; i++) {
+                ctx.fillRect(i * (lineDashLength + lineDashGap), laneY2, lineDashLength, 4);
+            }
+            let laneY3 = STREET_MIN_Y_DRAW + (STREET_MAX_Y_DRAW - STREET_MIN_Y_DRAW) * 0.75;
+            for (let i = 0; i < lineCount; i++) {
+                ctx.fillRect(i * (lineDashLength + lineDashGap), laneY3, lineDashLength, 4);
+            }
+
+            // Sidewalk/Curb
+            ctx.fillStyle = theme.curb;
+            ctx.fillRect(0, GROUND_Y, GAME_WIDTH, 5);
+        }
+
+
+        /**
+         * Draws the player tank with distinct, progressively cooler appearances.
+         */
+        function drawPlayer() {
+            const tankX = player.x - player.width / 2;
+            const tankY = player.y;
+            let hullColor, treadColor, turretColor, barrelColor, reactiveArmorColor, glowColor, accentColor;
+            let glowBlur;
+
+            // Base colors (blue navy inspired)
+            const baseHull = '#1a2a40'; // Dark blue-navy
+            const baseTread = '#0d131f'; // Darker blue-navy
+            const baseTurret = '#2a3c5c'; // Lighter blue-navy
+            const baseBarrel = '#405880'; // Even lighter blue-navy
+            const baseReactiveArmor = '#607aa3'; // Greyish blue
+
+            // Define colors and base glow for each level
+            switch (playerUpgradeLevel) {
+                case 0: // Basic Tank
+                    hullColor = baseHull;
+                    treadColor = baseTread;
+                    turretColor = baseTurret;
+                    barrelColor = baseBarrel;
+                    reactiveArmorColor = baseReactiveArmor;
+                    glowColor = '#00ffff';
+                    accentColor = '#aa00ff';
+                    glowBlur = 10;
+                    break;
+                case 1: // Tank Mk.I
+                    hullColor = darkenColor(baseHull, -5);
+                    treadColor = darkenColor(baseTread, -5);
+                    turretColor = darkenColor(baseTurret, -5);
+                    barrelColor = darkenColor(baseBarrel, -5);
+                    reactiveArmorColor = darkenColor(baseReactiveArmor, -5);
+                    glowColor = '#00ffff';
+                    accentColor = '#ff00aa';
+                    glowBlur = 12;
+                    break;
+                case 2: // Tank Mk.II - MG added
+                    hullColor = darkenColor(baseHull, -10);
+                    treadColor = darkenColor(baseTread, -10);
+                    turretColor = darkenColor(baseTurret, -10);
+                    barrelColor = darkenColor(baseBarrel, -10);
+                    reactiveArmorColor = darkenColor(baseReactiveArmor, -10);
+                    glowColor = '#00ffaa';
+                    accentColor = '#ffaa00';
+                    glowBlur = 15;
+                    break;
+                case 3: // Tank Mk.III - Dual MG
+                    hullColor = darkenColor(baseHull, -15);
+                    treadColor = darkenColor(baseTread, -15);
+                    turretColor = darkenColor(baseTurret, -15);
+                    barrelColor = darkenColor(baseBarrel, -15);
+                    reactiveArmorColor = darkenColor(baseReactiveArmor, -15);
+                    glowColor = '#00aaff';
+                    accentColor = '#ff00aa';
+                    glowBlur = 18;
+                    break;
+                case 4: // Tank Mk.IV - Missile Pods
+                    hullColor = darkenColor(baseHull, -20);
+                    treadColor = darkenColor(baseTread, -20);
+                    turretColor = darkenColor(baseTurret, -20);
+                    barrelColor = darkenColor(baseBarrel, -20);
+                    reactiveArmorColor = darkenColor(baseReactiveArmor, -20);
+                    glowColor = '#aa00ff';
+                    accentColor = '#00ffff';
+                    glowBlur = 22;
+                    break;
+                case 5: // Tank Mk.V
+                    hullColor = darkenColor(baseHull, -25);
+                    treadColor = darkenColor(baseTread, -25);
+                    turretColor = darkenColor(baseTurret, -25);
+                    barrelColor = darkenColor(baseBarrel, -25);
+                    reactiveArmorColor = darkenColor(baseReactiveArmor, -25);
+                    glowColor = '#ff00ff';
+                    accentColor = '#00ff00';
+                    glowBlur = 25;
+                    break;
+                case 6: // Tank Mk.VI - Additional Missile Pods
+                    hullColor = darkenColor(baseHull, -30);
+                    treadColor = darkenColor(baseTread, -30);
+                    turretColor = darkenColor(baseTurret, -30);
+                    barrelColor = darkenColor(baseBarrel, -30);
+                    reactiveArmorColor = darkenColor(baseReactiveArmor, -30);
+                    glowColor = '#ffaa00';
+                    accentColor = '#00ff77';
+                    glowBlur = 28;
+                    break;
+                case 7: // Tank Mk.VII
+                    hullColor = darkenColor(baseHull, -35);
+                    treadColor = darkenColor(baseTread, -35);
+                    turretColor = darkenColor(baseTurret, -35);
+                    barrelColor = darkenColor(baseBarrel, -35);
+                    reactiveArmorColor = darkenColor(baseReactiveArmor, -35);
+                    glowColor = '#00ff00';
+                    accentColor = '#ff00ff';
+                    glowBlur = 32;
+                    break;
+                case 8: // Tank Mk.MAX
+                    hullColor = darkenColor(baseHull, -40);
+                    treadColor = darkenColor(baseTread, -40);
+                    turretColor = darkenColor(baseTurret, -40);
+                    barrelColor = darkenColor(baseBarrel, -40);
+                    reactiveArmorColor = darkenColor(baseReactiveArmor, -40);
+                    glowColor = '#ffff00';
+                    accentColor = '#ff0000';
+                    glowBlur = 35;
+                    break;
+                default:
+                    hullColor = baseHull;
+                    treadColor = baseTread;
+                    turretColor = baseTurret;
+                    barrelColor = baseBarrel;
+                    reactiveArmorColor = baseReactiveArmor;
+                    glowColor = '#00ffff';
+                    accentColor = '#aa00ff';
+                    glowBlur = 10;
+            }
+
+            // Apply temporary overcharge visual effect
+            if (player.temporaryDamageBoostActive) {
+                glowColor = '#ff0000'; // Red glow for overcharge
+                glowBlur += 10; // More intense glow
+            }
+
+            ctx.shadowBlur = glowBlur;
+            ctx.shadowColor = glowColor;
+
+            // --- Main Hull ---
+            ctx.fillStyle = hullColor;
+            ctx.beginPath();
+            if (playerUpgradeLevel < 2) {
+                ctx.moveTo(tankX, tankY + player.height * 0.4);
+                ctx.lineTo(tankX + player.width * 0.1, tankY + player.height * 0.2);
+                ctx.lineTo(tankX + player.width * 0.9, tankY + player.height * 0.2);
+                ctx.lineTo(tankX + player.width, tankY + player.height * 0.4);
+                ctx.lineTo(tankX + player.width, tankY + player.height);
+                ctx.lineTo(tankX, tankY + player.height);
+            } else if (playerUpgradeLevel < 5) {
+                ctx.moveTo(tankX, tankY + player.height * 0.5);
+                ctx.lineTo(tankX + player.width * 0.05, tankY + player.height * 0.3);
+                ctx.lineTo(tankX + player.width * 0.95, tankY + player.height * 0.3);
+                ctx.lineTo(tankX + player.width, tankY + player.height * 0.5);
+                ctx.lineTo(tankX + player.width, tankY + player.height);
+                ctx.lineTo(tankX, tankY + player.height);
+            } else {
+                ctx.moveTo(tankX - 5, tankY + player.height * 0.6);
+                ctx.lineTo(tankX + player.width * 0.02, tankY + player.height * 0.25);
+                ctx.lineTo(tankX + player.width * 0.98, tankY + player.height * 0.25);
+                ctx.lineTo(tankX + player.width + 5, tankY + player.height * 0.6);
+                ctx.lineTo(tankX + player.width + 5, tankY + player.height);
+                ctx.lineTo(tankX - 5, tankY + player.height);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = darkenColor(hullColor, -10);
+            ctx.beginPath();
+            if (playerUpgradeLevel < 3) {
+                ctx.fillRect(tankX + player.width * 0.1, tankY + player.height * 0.2, player.width * 0.8, player.height * 0.05);
+            } else {
+                ctx.moveTo(tankX + player.width * 0.1, tankY + player.height * 0.2);
+                ctx.lineTo(tankX + player.width * 0.9, tankY + player.height * 0.2);
+                ctx.lineTo(tankX + player.width * 0.85, tankY + player.height * 0.25);
+                ctx.lineTo(tankX + player.width * 0.15, tankY + player.height * 0.25);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // --- Treads ---
+            ctx.fillStyle = treadColor;
+            const treadHeight = player.height * 0.25;
+            ctx.beginPath();
+            ctx.roundRect(tankX - 10, tankY + player.height * 0.7, player.width + 20, treadHeight, [8, 8, 8, 8]);
+            ctx.fill();
+
+            ctx.strokeStyle = darkenColor(treadColor, 15);
+            ctx.lineWidth = 2;
+            const treadLineSpacing = 15;
+            const numLines = Math.ceil((player.width + 20) / treadLineSpacing);
+
+            for (let i = 0; i < numLines; i++) {
+                const lineX = tankX - 10 + (i * treadLineSpacing) + treadOffset;
+                const wrappedX = lineX % (player.width + 20);
+                if (wrappedX > -5 && wrappedX < player.width + 20) {
+                    ctx.beginPath();
+                    ctx.moveTo(tankX - 10 + wrappedX, tankY + player.height * 0.7);
+                    ctx.lineTo(tankX - 10 + wrappedX, tankY + player.height * 0.7 + treadHeight);
+                    ctx.stroke();
+                }
+            }
+            if (playerUpgradeLevel >= 2) {
+                ctx.fillStyle = darkenColor(treadColor, 20);
+                ctx.beginPath();
+                ctx.roundRect(tankX, tankY + player.height * 0.75, player.width, treadHeight * 0.6, [5,5,5,5]);
+                ctx.fill();
+            }
+
+
+            // --- Turret ---
+            ctx.fillStyle = turretColor;
+            const turretCenterX = tankX + player.width * 0.6;
+            const turretBaseY = tankY + player.height * 0.2;
+            let currentTurretHeight = player.height * 0.45;
+            let turretTopWidth;
+            let turretBottomWidth;
+
+            ctx.beginPath();
+            if (playerUpgradeLevel < 2) {
+                turretTopWidth = player.width * 0.4;
+                turretBottomWidth = player.width * 0.55;
+                ctx.moveTo(turretCenterX - turretBottomWidth / 2, turretBaseY);
+                ctx.lineTo(turretCenterX - turretTopWidth / 2, turretBaseY - currentTurretHeight);
+                ctx.lineTo(turretCenterX + turretTopWidth / 2, turretBaseY - currentTurretHeight);
+                ctx.lineTo(turretCenterX + turretBottomWidth / 2, turretBaseY);
+                ctx.lineTo(turretCenterX + turretBottomWidth * 0.4, turretBaseY + player.height * 0.05);
+                ctx.lineTo(turretCenterX - turretBottomWidth * 0.4, turretBaseY + player.height * 0.05);
+            } else if (playerUpgradeLevel < 5) {
+                turretTopWidth = player.width * 0.45;
+                turretBottomWidth = player.width * 0.6;
+                ctx.moveTo(turretCenterX - turretBottomWidth / 2, turretBaseY);
+                ctx.lineTo(turretCenterX - turretTopWidth / 2, turretBaseY - currentTurretHeight);
+                ctx.lineTo(turretCenterX - turretTopWidth * 0.1, turretBaseY - currentTurretHeight * 1.1);
+                ctx.lineTo(turretCenterX + turretTopWidth * 0.1, turretBaseY - currentTurretHeight * 1.1);
+                ctx.lineTo(turretCenterX + turretTopWidth / 2, turretBaseY - currentTurretHeight);
+                ctx.lineTo(turretCenterX + turretBottomWidth / 2, turretBaseY);
+                ctx.lineTo(turretCenterX + turretBottomWidth * 0.45, turretBaseY + player.height * 0.08);
+                ctx.lineTo(turretCenterX - turretBottomWidth * 0.45, turretBaseY + player.height * 0.08);
+            } else {
+                currentTurretHeight = player.height * 0.5;
+                turretTopWidth = player.width * 0.5;
+                turretBottomWidth = player.width * 0.7;
+                ctx.moveTo(turretCenterX - turretBottomWidth / 2, turretBaseY + player.height * 0.03);
+                ctx.lineTo(turretCenterX - turretTopWidth / 2, turretBaseY - currentTurretHeight + player.height * 0.03);
+                ctx.lineTo(turretCenterX - turretTopWidth * 0.1, turretBaseY - currentTurretHeight * 1.2 + player.height * 0.03);
+                ctx.lineTo(turretCenterX + turretTopWidth * 0.1, turretBaseY - currentTurretHeight * 1.2 + player.height * 0.03);
+                ctx.lineTo(turretCenterX + turretTopWidth / 2, turretBaseY - currentTurretHeight + player.height * 0.03);
+                ctx.lineTo(turretCenterX + turretBottomWidth / 2, turretBaseY + player.height * 0.03);
+                ctx.lineTo(turretCenterX + turretBottomWidth * 0.4, turretBaseY + player.height * 0.12);
+                ctx.lineTo(turretCenterX - turretBottomWidth * 0.4, turretBaseY + player.height * 0.12);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = darkenColor(turretColor, -15);
+            ctx.beginPath();
+            if (playerUpgradeLevel >= 2) {
+                ctx.moveTo(turretCenterX - turretTopWidth * 0.4, turretBaseY - currentTurretHeight * 0.9);
+                ctx.lineTo(turretCenterX + turretTopWidth * 0.4, turretBaseY - currentTurretHeight * 0.9);
+                ctx.lineTo(turretCenterX + turretTopWidth * 0.3, turretBaseY - currentTurretHeight * 0.8);
+                ctx.lineTo(turretCenterX - turretTopWidth * 0.3, turretBaseY - currentTurretHeight * 0.8);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Commander's Station and Optics
+            ctx.fillStyle = darkenColor(turretColor, 10);
+            ctx.beginPath();
+            ctx.ellipse(turretCenterX + turretTopWidth * 0.25, turretBaseY - currentTurretHeight * 0.7, 15, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = glowColor;
+            ctx.beginPath();
+            ctx.arc(turretCenterX + turretTopWidth * 0.25 + 5, turretBaseY - currentTurretHeight * 0.7, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Gunner's optics
+            ctx.fillStyle = darkenColor(turretColor, 10);
+            ctx.beginPath();
+            ctx.arc(turretCenterX - turretTopWidth * 0.2, turretBaseY - currentTurretHeight * 0.6, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = glowColor;
+            ctx.beginPath();
+            ctx.arc(turretCenterX - turretTopWidth * 0.2, turretBaseY - currentTurretHeight * 0.6, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+
+            // --- Main Cannon Barrel ---
+            ctx.fillStyle = barrelColor;
+            const barrelY = tankY + player.height * 0.05;
+            let barrelHeight = 14;
+            let muzzleBrakeWidth = 20;
+
+            if (playerUpgradeLevel >= 4) {
+                barrelHeight = 18;
+                muzzleBrakeWidth = 25;
+            }
+            if (playerUpgradeLevel >= 7) {
+                barrelHeight = 22;
+                muzzleBrakeWidth = 30;
+            }
+
+            const barrelOriginX = turretCenterX + turretTopWidth * 0.2;
+            ctx.fillRect(barrelOriginX, barrelY - barrelHeight / 2, player.barrelLength, barrelHeight);
+
+            ctx.fillStyle = darkenColor(barrelColor, 20);
+            if (playerUpgradeLevel < 3) {
+                ctx.fillRect(barrelOriginX + player.barrelLength, barrelY - barrelHeight / 2 - 3, muzzleBrakeWidth, barrelHeight + 6);
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(barrelOriginX + player.barrelLength, barrelY - barrelHeight / 2 - 5);
+                ctx.lineTo(barrelOriginX + player.barrelLength + muzzleBrakeWidth, barrelY - barrelHeight / 2 - 5);
+                ctx.lineTo(barrelOriginX + player.barrelLength + muzzleBrakeWidth * 0.8, barrelY - barrelHeight / 2 + barrelHeight + 5);
+                ctx.lineTo(barrelOriginX + player.barrelLength, barrelY - barrelHeight / 2 + barrelHeight + 5);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = darkenColor(barrelColor, 30);
+                ctx.fillRect(barrelOriginX + player.barrelLength + 5, barrelY - barrelHeight / 2, muzzleBrakeWidth - 10, barrelHeight);
+            }
+
+            // --- Additional Guns / Weapon Systems ---
+            if (playerUpgradeLevel >= 1) { // Secondary Machine Gun
+                ctx.fillStyle = darkenColor(turretColor, 20);
+                ctx.beginPath();
+                ctx.arc(turretCenterX + turretTopWidth * 0.4, turretBaseY - currentTurretHeight * 0.5, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillRect(turretCenterX + turretTopWidth * 0.4 + 5, turretBaseY - currentTurretHeight * 0.5 - 2, 18, 4);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(turretCenterX + turretTopWidth * 0.4 + 10, turretBaseY - currentTurretHeight * 0.5 - 4, 5, 2);
+            }
+
+            if (playerUpgradeLevel >= 3) { // Dual Machine Guns
+                ctx.fillStyle = darkenColor(turretColor, 20);
+                ctx.beginPath();
+                ctx.arc(turretCenterX - turretTopWidth * 0.35, turretBaseY - currentTurretHeight * 0.4, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillRect(turretCenterX - turretTopWidth * 0.35 + 5, turretBaseY - currentTurretHeight * 0.4 - 3, 20, 6);
+
+                ctx.beginPath();
+                ctx.arc(turretCenterX + turretTopWidth * 0.1, turretBaseY - currentTurretHeight * 0.4, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillRect(turretCenterX + turretTopWidth * 0.1 + 5, turretBaseY - currentTurretHeight * 0.4 - 3, 20, 6);
+            }
+
+            if (playerUpgradeLevel >= 4) { // Missile Pods
+                ctx.fillStyle = darkenColor(hullColor, 15);
+                const podWidth = 30;
+                const podHeight = 20;
+                ctx.fillRect(tankX + player.width * 0.05, tankY + player.height * 0.35, podWidth, podHeight);
+                ctx.fillRect(tankX + player.width - podWidth - player.width * 0.05, tankY + player.height * 0.35, podWidth, podHeight);
+                
+                ctx.fillStyle = '#111';
+                ctx.fillRect(tankX + player.width * 0.05 + 5, tankY + player.height * 0.35 + 4, 8, 12);
+                ctx.fillRect(tankX + player.width * 0.05 + 18, tankY + player.height * 0.35 + 4, 8, 12);
+                ctx.fillRect(tankX + player.width - podWidth - player.width * 0.05 + 5, tankY + player.height * 0.35 + 4, 8, 12);
+                ctx.fillRect(tankX + player.width - podWidth - player.width * 0.05 + 18, tankY + player.height * 0.35 + 4, 8, 12);
+            }
+
+            if (playerUpgradeLevel >= 6) { // Additional missile pods
+                ctx.fillStyle = darkenColor(turretColor, 10);
+                const largePodWidth = 40;
+                const largePodHeight = 25;
+
+                ctx.fillRect(turretCenterX - turretTopWidth / 2 + 10, turretBaseY - currentTurretHeight * 0.8 - 10, largePodWidth, largePodHeight);
+                ctx.fillRect(turretCenterX + turretTopWidth / 2 - largePodWidth - 10, turretBaseY - currentTurretHeight * 0.8 - 10, largePodWidth, largePodHeight);
+
+                ctx.fillStyle = '#111';
+                ctx.fillRect(turretCenterX - turretTopWidth / 2 + 18, turretBaseY - currentTurretHeight * 0.8 - 5, 8, 15);
+                ctx.fillRect(turretCenterX - turretTopWidth / 2 + 34, turretBaseY - currentTurretHeight * 0.8 - 5, 8, 15);
+                ctx.fillRect(turretCenterX + turretTopWidth / 2 - largePodWidth, turretBaseY - currentTurretHeight * 0.8 - 5, 8, 15);
+                ctx.fillRect(turretCenterX + turretTopWidth / 2 - largePodWidth + 16, turretBaseY - currentTurretHeight * 0.8 - 5, 8, 15);
+            }
+
+            // --- Smoke Dischargers ---
+            ctx.fillStyle = '#3a4a50';
+            ctx.beginPath();
+            ctx.arc(turretCenterX - turretBottomWidth * 0.4, turretBaseY - currentTurretHeight * 0.3, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(turretCenterX - turretBottomWidth * 0.3, turretBaseY - currentTurretHeight * 0.25, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+
+            // --- Reactive Armor Blocks ---
+            ctx.fillStyle = reactiveArmorColor;
+            ctx.fillRect(tankX + player.width * 0.15, tankY + player.height * 0.45, 20, 15);
+            ctx.fillRect(tankX + player.width * 0.4, tankY + player.height * 0.5, 20, 15);
+
+            if (playerUpgradeLevel >= 2) {
+                ctx.fillRect(tankX + player.width * 0.65, tankY + player.height * 0.45, 25, 18);
+                ctx.fillRect(tankX + player.width * 0.25, tankY + player.height * 0.55, 18, 25);
+            }
+            if (playerUpgradeLevel >= 4) {
+                ctx.fillRect(tankX + player.width * 0.55, tankY + player.height * 0.6, 18, 25);
+                ctx.fillRect(tankX + player.width * 0.8, tankY + player.height * 0.5, 18, 25);
+                ctx.fillRect(tankX + player.width * 0.05, tankY + player.height * 0.48, 10, 10);
+                ctx.fillStyle = darkenColor(reactiveArmorColor, -10);
+                ctx.fillRect(tankX + player.width * 0.66, tankY + player.height * 0.43, 20, 15);
+            }
+            if (playerUpgradeLevel >= 6) {
+                ctx.fillRect(tankX - 15, tankY + player.height * 0.6, 20, player.height * 0.4);
+                ctx.fillRect(tankX + player.width - 5, tankY + player.height * 0.6, 20, player.height * 0.4);
+                ctx.fillStyle = darkenColor(reactiveArmorColor, 10);
+                ctx.fillRect(tankX, tankY + player.height * 0.7, player.width, 10);
+            }
+            if (playerUpgradeLevel >= 7) {
+                 ctx.fillRect(turretCenterX - turretTopWidth * 0.25, turretBaseY - currentTurretHeight + 10, 10, 10);
+                 ctx.fillRect(turretCenterX + turretTopWidth * 0.25 - 10, turretBaseY - currentTurretHeight + 10, 10, 10);
+                 ctx.fillRect(turretCenterX - turretBottomWidth * 0.5 - 5, turretBaseY + 5, 8, currentTurretHeight - 10);
+                 ctx.fillRect(turretCenterX + turretBottomWidth * 0.5 - 3, turretBaseY + 5, 8, currentTurretHeight - 10);
+            }
+            if (playerUpgradeLevel >= 8) {
+                ctx.fillStyle = accentColor;
+                ctx.shadowBlur = glowBlur * 0.8;
+                ctx.shadowColor = accentColor;
+                ctx.fillRect(tankX + player.width * 0.3, tankY + player.height * 0.65, 10, 5);
+                ctx.fillRect(tankX + player.width * 0.7, tankY + player.height * 0.65, 10, 5);
+                ctx.fillRect(tankX + player.width * 0.2, tankY + player.height * 0.3, 3, 20);
+                ctx.fillRect(tankX + player.width * 0.78, tankY + player.height * 0.3, 3, 20);
+
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
+            }
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+        }
+
+        /**
+         * Draws a detailed victim character.
+         */
+        function drawVictim(victim) {
+            const victimX = victim.x;
+            const victimY = victim.y;
+            const headRadius = 8;
+            const bodyWidth = 20;
+            const bodyHeight = 30;
+
+            ctx.fillStyle = '#fbc531'; // Skin tone
+
+            ctx.beginPath();
+            ctx.arc(victimX + headRadius, victimY + headRadius, headRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(victimX, victimY + headRadius * 2);
+            ctx.lineTo(victimX + bodyWidth, victimY + headRadius * 2);
+            ctx.lineTo(victimX + bodyWidth * 0.9, victimY + headRadius * 2 + bodyHeight);
+            ctx.lineTo(victimX + bodyWidth * 0.1, victimY + headRadius * 2 + bodyHeight);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#3498db'; // Shirt
+            ctx.fillRect(victimX, victimY + headRadius * 2, bodyWidth, bodyHeight * 0.6);
+            ctx.fillStyle = '#2c3e50'; // Pants
+            ctx.fillRect(victimX, victimY + headRadius * 2 + bodyHeight * 0.6, bodyWidth, bodyHeight * 0.4);
+
+            ctx.fillStyle = '#fbc531';
+            ctx.fillRect(victimX - 5, victimY + headRadius * 2 + 5, 5, 20);
+            ctx.fillRect(victimX + bodyWidth, victimY + headRadius * 2 + 5, 5, 20);
+            ctx.fillRect(victimX - 8, victimY + headRadius * 2 + 20, 5, 10);
+            ctx.fillRect(victimX + bodyWidth + 3, victimY + headRadius * 2 + 20, 5, 10);
+
+            ctx.fillStyle = '#fbc531';
+            ctx.fillRect(victimX + 5, victimY + headRadius * 2 + bodyHeight, 5, 25);
+            ctx.fillRect(victimX + bodyWidth - 10, victimY + headRadius * 2 + bodyHeight, 5, 25);
+
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(victimX + headRadius - 3, victimY + headRadius * 1.2, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(victimX + headRadius + 3, victimY + headRadius * 1.2, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(victimX + headRadius, victimY + headRadius * 1.5 + 2, 3, 0, Math.PI, false);
+            ctx.stroke();
+
+            drawHealthBar(victimX, victimY - 15, bodyWidth, 5, victim.health, victim.maxHealth, '#e74c3c');
+        }
+
+        /**
+         * Draws a wall.
+         */
+        function drawWall(wall) {
+            ctx.fillStyle = '#8B4513'; // Brown for stone/concrete
+            ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
+
+            // Add some brick-like details
+            ctx.strokeStyle = '#6e3911';
+            ctx.lineWidth = 1;
+            const brickHeight = 10;
+            for (let y = wall.y; y < wall.y + wall.height; y += brickHeight) {
+                ctx.beginPath();
+                ctx.moveTo(wall.x, y);
+                ctx.lineTo(wall.x + wall.width, y);
+                ctx.stroke();
+            }
+            const brickWidth = wall.width / 2;
+            for (let x = wall.x; x < wall.x + wall.width; x += brickWidth) {
+                for (let y = wall.y; y < wall.y + wall.height; y += brickHeight * 2) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x, y + brickHeight);
+                    ctx.stroke();
+                }
+            }
+
+            drawHealthBar(wall.x, wall.y - 10, wall.width, 5, wall.health, wall.maxHealth, '#f39c12');
+        }
+
+        /**
+         * Draws a detailed zombie with appearance variations based on tier.
+         */
+        function drawZombie(zombie) {
+            const zombieX = zombie.x;
+            const zombieY = zombie.y;
+            let bodyColor, headColor, exposedColor, eyeColor, clothingColor;
+
+            if (zombie.type === 'zombieTank') {
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00ff00';
+                ctx.fillStyle = '#223322';
+                ctx.fillRect(zombieX, zombieY + ZOMBIE_TANK_HEIGHT * 0.4, ZOMBIE_TANK_WIDTH, ZOMBIE_TANK_HEIGHT * 0.6);
+                ctx.fillStyle = '#334433';
+                ctx.fillRect(zombieX + ZOMBIE_TANK_WIDTH * 0.1, zombieY, ZOMBIE_TANK_WIDTH * 0.6, ZOMBIE_TANK_HEIGHT * 0.5);
+                ctx.fillStyle = '#111';
+                ctx.fillRect(zombieX - 10, zombieY + ZOMBIE_TANK_HEIGHT * 0.8, ZOMBIE_TANK_WIDTH + 20, 15);
+                
+                ctx.fillStyle = '#554433';
+                ctx.fillRect(zombieX + ZOMBIE_TANK_WIDTH * 0.6, zombieY + ZOMBIE_TANK_HEIGHT * 0.2, ZOMBIE_TANK_WIDTH * 0.4, 10);
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = '#ff0000';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(zombieX + ZOMBIE_TANK_WIDTH * 0.3, zombieY + ZOMBIE_TANK_HEIGHT * 0.2, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(zombieX + ZOMBIE_TANK_WIDTH * 0.7, zombieY + ZOMBIE_TANK_HEIGHT * 0.2, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
+
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(zombieX + ZOMBIE_TANK_WIDTH * 0.2, zombieY + ZOMBIE_TANK_HEIGHT * 0.5, 15, 10);
+                ctx.fillRect(zombieX + ZOMBIE_TANK_WIDTH * 0.7, zombieY + ZOMBIE_TANK_HEIGHT * 0.6, 10, 15);
+
+            } else {
+                switch (currentZombieTier) {
+                    case 0: // Shambler (Basic)
+                        bodyColor = '#4f5e3e'; headColor = '#6e8b4e'; exposedColor = '#a0522d'; eyeColor = '#ff0000'; clothingColor = '#2f4f4f';
+                        break;
+                    case 1: // Groaner
+                        bodyColor = '#3e524f'; headColor = '#5e726b'; exposedColor = '#804220'; eyeColor = '#ff4500'; clothingColor = '#253535';
+                        ctx.fillStyle = darkenColor(bodyColor, 10);
+                        ctx.fillRect(zombieX + ZOMBIE_WIDTH * 0.3, zombieY + ZOMBIE_HEIGHT * 0.4, 5, 20);
+                        ctx.fillRect(zombieX + ZOMBIE_WIDTH * 0.6, zombieY + ZOMBIE_HEIGHT * 0.4, 5, 20);
+                        break;
+                    case 2: // Fleshpound
+                        bodyColor = '#5c3a2f'; headColor = '#7d4a3e'; exposedColor = '#c06030'; eyeColor = '#00ff00'; clothingColor = '#1a1a1a';
+                        ctx.fillStyle = darkenColor(bodyColor, -15);
+                        ctx.beginPath();
+                        ctx.ellipse(zombieX + ZOMBIE_WIDTH * 0.5, zombieY + ZOMBIE_HEIGHT * 0.5, ZOMBIE_WIDTH * 0.4, ZOMBIE_HEIGHT * 0.2, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 12;
+                        break;
+                    case 3: // Crawler
+                        bodyColor = '#333333'; headColor = '#4a4a4a'; exposedColor = '#606060'; eyeColor = '#ffff00'; clothingColor = '#101010';
+                        ctx.fillStyle = bodyColor;
+                        ctx.fillRect(zombieX, zombieY + ZOMBIE_HEIGHT * 0.6, ZOMBIE_WIDTH * 1.2, ZOMBIE_HEIGHT * 0.4);
+                        ctx.fillStyle = headColor;
+                        ctx.beginPath();
+                        ctx.arc(zombieX + ZOMBIE_WIDTH * 0.6, zombieY + ZOMBIE_HEIGHT * 0.6, ZOMBIE_WIDTH * 0.3, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 10;
+                        break;
+                }
+
+                ctx.fillStyle = bodyColor;
+                ctx.beginPath();
+                ctx.moveTo(zombieX, zombieY + ZOMBIE_HEIGHT * 0.8);
+                ctx.quadraticCurveTo(zombieX - 10, zombieY + ZOMBIE_HEIGHT * 0.4, zombieX + ZOMBIE_WIDTH * 0.2, zombieY + ZOMBIE_HEIGHT * 0.3);
+                ctx.lineTo(zombieX + ZOMBIE_WIDTH * 0.8, zombieY + ZOMBIE_HEIGHT * 0.2);
+                ctx.quadraticCurveTo(zombieX + ZOMBIE_WIDTH + 10, zombieY + ZOMBIE_HEIGHT * 0.4, zombieX + ZOMBIE_WIDTH, zombieY + ZOMBIE_HEIGHT * 0.7);
+                ctx.lineTo(zombieX + ZOMBIE_WIDTH * 0.8, zombieY + ZOMBIE_HEIGHT);
+                ctx.lineTo(zombieX + ZOMBIE_WIDTH * 0.2, zombieY + ZOMBIE_HEIGHT);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = headColor;
+                ctx.beginPath();
+                ctx.ellipse(zombieX + ZOMBIE_WIDTH * 0.6, zombieY + ZOMBIE_HEIGHT * 0.2, ZOMBIE_WIDTH * 0.25, ZOMBIE_HEIGHT * 0.15, -Math.PI / 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = exposedColor;
+                ctx.beginPath();
+                ctx.arc(zombieX + ZOMBIE_WIDTH * 0.65, zombieY + ZOMBIE_HEIGHT * 0.15, 7, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = darkenColor(exposedColor, 30);
+                ctx.fillRect(zombieX + ZOMBIE_WIDTH * 0.55, zombieY + ZOMBIE_HEIGHT * 0.28, ZOMBIE_WIDTH * 0.2, 5);
+
+                ctx.fillStyle = eyeColor;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = eyeColor;
+                ctx.beginPath();
+                ctx.arc(zombieX + ZOMBIE_WIDTH * 0.55, zombieY + ZOMBIE_HEIGHT * 0.2, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(zombieX + ZOMBIE_WIDTH * 0.65, zombieY + ZOMBIE_HEIGHT * 0.22, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
+
+                ctx.fillStyle = clothingColor;
+                ctx.fillRect(zombieX + ZOMBIE_WIDTH * 0.1, zombieY + ZOMBIE_HEIGHT * 0.4, ZOMBIE_WIDTH * 0.8, ZOMBIE_HEIGHT * 0.3);
+                ctx.strokeStyle = darkenColor(clothingColor, 20);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(zombieX + ZOMBIE_WIDTH * 0.2, zombieY + ZOMBIE_HEIGHT * 0.7);
+                ctx.lineTo(zombieX + ZOMBIE_WIDTH * 0.1, zombieY + ZOMBIE_HEIGHT * 0.75);
+                ctx.lineTo(zombieX + ZOMBIE_WIDTH * 0.3, zombieY + ZOMBIE_HEIGHT * 0.78);
+                ctx.stroke();
+
+                ctx.fillStyle = bodyColor;
+                ctx.fillRect(zombieX + ZOMBIE_WIDTH * 0.1, zombieY + ZOMBIE_HEIGHT * 0.3, 8, 35);
+                ctx.fillRect(zombieX + ZOMBIE_WIDTH * 0.85, zombieY + ZOMBIE_HEIGHT * 0.3, 8, 35);
+
+                ctx.fillStyle = exposedColor;
+                ctx.beginPath();
+                ctx.moveTo(zombieX + ZOMBIE_WIDTH * 0.1, zombieY + ZOMBIE_HEIGHT * 0.3 + 35);
+                ctx.lineTo(zombieX + ZOMBIE_WIDTH * 0.1 - 5, zombieY + ZOMBIE_HEIGHT * 0.3 + 45);
+                ctx.lineTo(zombieX + ZOMBIE_WIDTH * 0.1 + 5, zombieY + ZOMBIE_HEIGHT * 0.3 + 45);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(zombieX + ZOMBIE_WIDTH * 0.85, zombieY + ZOMBIE_HEIGHT * 0.3 + 35);
+                ctx.lineTo(zombieX + ZOMBIE_WIDTH * 0.85 - 5, zombieY + ZOMBIE_HEIGHT * 0.3 + 45);
+                ctx.lineTo(zombieX + ZOMBIE_WIDTH * 0.85 + 5, zombieY + ZOMBIE_HEIGHT * 0.3 + 45);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = bodyColor;
+                ctx.fillRect(zombieX + ZOMBIE_WIDTH * 0.3, zombieY + ZOMBIE_HEIGHT * 0.7, 10, 20);
+                ctx.fillRect(zombieX + ZOMBIE_WIDTH * 0.6, zombieY + ZOMBIE_HEIGHT * 0.7, 10, 20);
+                ctx.fillRect(zombieX + ZOMBIE_WIDTH * 0.25, zombieY + ZOMBIE_HEIGHT * 0.9, 15, 5);
+                ctx.fillRect(zombieX + ZOMBIE_WIDTH * 0.55, zombieY + ZOMBIE_HEIGHT * 0.9, 15, 5);
+            }
+            drawHealthBar(zombieX, zombieY - 10, zombie.width, 5, zombie.health, zombie.maxHealth, '#f39c12');
+        }
+
+
+        /**
+         * Draws different types of projectiles (bullets, lasers, missiles, zombie projectiles).
+         */
+        function drawProjectile(p) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = p.color;
+
+            if (p.type === 'bullet') {
+                const rocketWidth = 10;
+                const rocketHeight = 6;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x - rocketWidth / 2, p.y - rocketHeight / 2, rocketWidth, rocketHeight);
+
+                ctx.beginPath();
+                ctx.moveTo(p.x + rocketWidth / 2, p.y - rocketHeight / 2);
+                ctx.lineTo(p.x + rocketWidth / 2 + 5, p.y);
+                ctx.lineTo(p.x + rocketWidth / 2, p.y + rocketHeight / 2);
+                ctx.closePath();
+                ctx.fill();
+
+                const exhaustLength = 20;
+                // Check for non-finite values before creating gradient
+                if (!isFinite(p.x) || !isFinite(p.y)) {
+                    console.error("Non-finite projectile position encountered in drawProjectile (bullet).");
+                    return; // Skip drawing this projectile
+                }
+                let exhaustGradient = ctx.createLinearGradient(p.x - rocketWidth / 2 - exhaustLength, p.y, p.x - rocketWidth / 2, p.y);
+                exhaustGradient.addColorStop(0, 'rgba(255, 165, 0, 0.8)');
+                exhaustGradient.addColorStop(0.5, 'rgba(255, 255, 0, 0.5)');
+                exhaustGradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
+                ctx.fillStyle = exhaustGradient;
+                ctx.fillRect(p.x - rocketWidth / 2 - exhaustLength, p.y - rocketHeight / 2 - 2, exhaustLength, rocketHeight + 4);
+
+            } else if (p.type === 'laser') {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y - p.height / 2, p.width, p.height);
+            } else if (p.type === 'missile') {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.moveTo(p.x - p.width / 2, p.y - p.height / 2);
+                ctx.lineTo(p.x + p.width / 2, p.y);
+                ctx.lineTo(p.x - p.width / 2, p.y + p.height / 2);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = darkenColor(p.color, -20);
+                ctx.beginPath();
+                ctx.moveTo(p.x + p.width / 2, p.y);
+                ctx.lineTo(p.x + p.width / 2 + 5, p.y - p.height / 4);
+                ctx.lineTo(p.x + p.width / 2 + 5, p.y + p.height / 4);
+                ctx.closePath();
+                ctx.fill();
+
+                const exhaustLength = 15;
+                // Check for non-finite values before creating gradient
+                 if (!isFinite(p.x) || !isFinite(p.y)) {
+                    console.error("Non-finite projectile position encountered in drawProjectile (missile).");
+                    return; // Skip drawing this projectile
+                }
+                let exhaustGradient = ctx.createLinearGradient(p.x - p.width / 2 - exhaustLength, p.y, p.x - p.width / 2, p.y);
+                exhaustGradient.addColorStop(0, 'rgba(255, 0, 0, 0.8)');
+                exhaustGradient.addColorStop(0.5, 'rgba(255, 100, 0, 0.5)');
+                exhaustGradient.addColorStop(1, 'rgba(255, 200, 0, 0.1)');
+                ctx.fillStyle = exhaustGradient;
+                ctx.fillRect(p.x - p.width / 2 - exhaustLength, p.y - p.height / 2, exhaustLength, p.height);
+            } else if (p.type === 'zombieProjectile') {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+        }
+
+        /**
+         * Draws all active blood particles.
+         */
+        function drawBloodParticles() {
+            bloodParticles.forEach(p => {
+                ctx.fillStyle = p.color;
+                const alpha = p.life / BLOOD_PARTICLE_LIFESPAN;
+                ctx.globalAlpha = alpha;
+                ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+                ctx.globalAlpha = 1;
+            });
+        }
+
+        /**
+         * Draws explosion particles.
+         */
+        function drawExplosionParticles() {
+            explosions.forEach(p => {
+                ctx.fillStyle = p.color;
+                const alpha = p.life / EXPLOSION_PARTICLE_LIFESPAN;
+                ctx.globalAlpha = alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+        }
+
+        /**
+         * Handles drawing all game elements.
+         */
+        function draw() {
+            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            drawBackground();
+
+            walls.forEach(drawWall); // Draw walls first so zombies/tank can be on top
+            drawPlayer();
+            victims.forEach(drawVictim);
+            zombies.forEach(drawZombie);
+            projectiles.forEach(drawProjectile);
+            drawBloodParticles();
+            drawExplosionParticles();
+        }
+
+        // --- Firebase Functions ---
+
+        /**
+         * Fetches the best score from Firestore.
+         */
+        async function getHighScore() {
+            if (!isFirebaseReady || !userId) {
+                console.log("Firebase not ready or userId not available for high score fetch.");
+                return;
+            }
+            try {
+                const highScoresRef = doc(db, 'artifacts', appId, 'users', userId, 'highscores', 'zombieHunterHighScore');
+                const docSnap = await getDoc(highScoresRef);
+                if (docSnap.exists()) {
+                    bestScore = docSnap.data().value || 0;
+                } else {
+                    bestScore = 0;
+                }
+                bestScoreDisplay.textContent = `Best Score: ${bestScore}`;
+            } catch (error) {
+                console.error("Error getting high score:", error);
+            }
+        }
+
+        /**
+         * Sets (updates) the best score in Firestore.
+         */
+        async function setHighScore(newScore) {
+            if (!isFirebaseReady || !userId) {
+                console.log("Firebase not ready or userId not available for high score set.");
+                return;
+            }
+            try {
+                const highScoresRef = doc(db, 'artifacts', appId, 'users', userId, 'highscores', 'zombieHunterHighScore');
+                await setDoc(highScoresRef, { value: newScore }, { merge: true });
+                bestScore = newScore;
+                bestScoreDisplay.textContent = `Best Score: ${bestScore}`;
+            } catch (error) {
+                console.error("Error setting high score:", error);
+            }
+        }
+
+        // --- Game Logic Functions ---
+
+        /**
+         * Applies difficulty settings to game variables.
+         */
+        function applyDifficulty(difficulty) {
+            const settings = DIFFICULTIES[difficulty];
+            MAX_TANK_HEALTH = settings.initialTankHealth;
+            ZOMBIE_INITIAL_SPEED = settings.zombieInitialSpeed;
+            ZOMBIE_INITIAL_HEALTH = settings.zombieInitialHealth;
+            ZOMBIE_SPAWN_INTERVAL = settings.zombieSpawnInterval;
+            VICTIM_DAMAGE_PER_ZOMBIE = settings.zombieDamageToVictim;
+            ZOMBIE_TANK_SPAWN_CHANCE = settings.zombieTankSpawnChance;
+            ZOMBIE_TANK_PROJECTILE_DAMAGE = settings.zombieTankProjectileDamage;
+            PLAYER_COLLISION_DAMAGE_TO_ZOMBIE = settings.playerCollisionDamageToZombie;
+            // scoreMultiplier = settings.scoreMultiplier; // Not implemented yet, but ready for future use
+
+            player.maxHealth = MAX_TANK_HEALTH; // Update player's max health based on difficulty
+            currentDifficulty = difficulty;
+            difficultyDisplay.textContent = `Difficulty: ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`;
+        }
+
+        /**
+         * Resets all game variables to their initial state.
+         */
+        function resetGame() {
+            projectiles = [];
+            zombies = [];
+            bloodParticles = [];
+            explosions = [];
+            walls = []; // Reset walls
+            score = 0;
+            currentWave = 1;
+            zombieSpeed = ZOMBIE_INITIAL_SPEED;
+            zombieSpawnRate = ZOMBIE_SPAWN_INTERVAL;
+            player.health = MAX_TANK_HEALTH;
+            playerUpgradeLevel = 0;
+            currentZombieTier = 0;
+            currentBackgroundThemeIndex = 0;
+            player.temporaryDamageBoostActive = false;
+            player.temporaryDamageBoostEndTime = 0;
+            player.uavActive = false;
+            player.uavEndTime = 0;
+
+            player.barrelLength = TANK_UPGRADE_LEVELS[0].barrelLength;
+            BULLET_SPEED = TANK_UPGRADE_LEVELS[0].bulletSpeed;
+            BULLET_DAMAGE = TANK_UPGRADE_LEVELS[0].bulletDamage;
+            FIRE_RATE_COOLDOWN = TANK_UPGRADE_LEVELS[0].fireRate;
+            LASER_DAMAGE = 5; // Reset laser damage
+            MISSILE_DAMAGE = 40; // Reset missile damage
+
+            player.canFirePrimary = true;
+            player.currentPrimaryCooldown = 0;
+            player.canFireLaser = true;
+            player.currentLaserCooldown = 0;
+            player.canFireMissile = true;
+            player.currentMissileCooldown = 0;
+
+            upgradeAvailable = false;
+            tankUpgraded = false;
+            
+            if (upgradeButton) {
+                upgradeButton.style.display = 'none';
+                if (playerUpgradeLevel < UPGRADE_SCORE_THRESHOLDS.length) {
+                    upgradeButton.textContent = `Upgrade Tank (${UPGRADE_SCORE_THRESHOLDS[playerUpgradeLevel]} pts)`;
+                } else {
+                    upgradeButton.textContent = `Tank MAX!`;
+                }
+            }
+            
+            treadOffset = 0;
+
+            victims = [];
+            for (let i = 0; i < VICTIM_INITIAL_COUNT; i++) {
+                victims.push({
+                    x: DEFENSE_LINE_X - (VICTIM_WIDTH * 1.5 * (i + 1)),
+                    y: VICTIM_Y,
+                    width: VICTIM_WIDTH,
+                    height: VICTIM_HEIGHT,
+                    health: 100,
+                    maxHealth: 100,
+                    isAlive: true
+                });
+            }
+
+            gameOver = false;
+            gameRunning = false;
+            gamePaused = false;
+            lastZombieSpawnTime = 0;
+            player.x = GAME_WIDTH / 4;
+            player.y = STREET_MIN_Y_DRAW + (STREET_MAX_Y_DRAW - STREET_MIN_Y_DRAW) / 2 - TANK_HEIGHT / 2;
+
+            scoreDisplay.textContent = `Score: ${score}`;
+            bestScoreDisplay.textContent = `Best Score: ${bestScore}`;
+            tankHealthDisplay.textContent = `Tank HP: ${player.health}`;
+            victimCountDisplay.textContent = `Victims: ${victims.filter(v => v.isAlive).length}`;
+            waveDisplay.textContent = `Wave: ${currentWave}`;
+            gameOverScreen.style.display = 'none';
+            if (startButton) startButton.style.display = 'block';
+            if (restartButton) restartButton.style.display = 'none';
+            if (pauseButton) pauseButton.style.display = 'none'; // Hide pause button before game starts
+            if (shopButton) shopButton.style.display = 'none'; // Hide shop button before game starts
+            shopScreen.style.display = 'none'; // Hide shop screen
+
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            draw();
+        }
+
+        /**
+         * Fires a primary bullet.
+         */
+        function firePrimaryBullet() {
+            if (!gameRunning || gameOver || !player.canFirePrimary) return;
+
+            const currentDamage = player.temporaryDamageBoostActive ? BULLET_DAMAGE * 2 : BULLET_DAMAGE;
+
+            projectiles.push({
+                x: player.x + player.barrelLength / 2,
+                y: player.y + (player.height * 0.05),
+                width: 10,
+                height: 6,
+                radius: BULLET_RADIUS,
+                color: '#ffff00',
+                speed: BULLET_SPEED,
+                damage: currentDamage,
+                type: 'bullet'
+            });
+            player.canFirePrimary = false;
+            player.currentPrimaryCooldown = FIRE_RATE_COOLDOWN;
+        }
+
+        /**
+         * Fires a laser beam from machine guns.
+         */
+        function fireLaser() {
+            if (!gameRunning || gameOver || !player.canFireLaser || !TANK_UPGRADE_LEVELS[playerUpgradeLevel].laserEnabled) return;
+
+            const currentDamage = player.temporaryDamageBoostActive ? LASER_DAMAGE * 2 : LASER_DAMAGE;
+            let targets = [];
+
+            // For mobile, lasers are automatic; for desktop, they are manual with 'M' key
+            if (window.innerWidth <= 768) { // Mobile
+                 // If UAV is active, target all zombies for mobile
+                if (player.uavActive) {
+                    targets = zombies;
+                } else {
+                    // Otherwise, target the closest zombie
+                    let targetZombie = null;
+                    let minDistance = Infinity;
+                    for (const zombie of zombies) {
+                        const dist = Math.abs(zombie.x - (player.x + player.barrelLength / 2));
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            targetZombie = zombie;
+                        }
+                    }
+                    if (targetZombie) {
+                        targets.push(targetZombie);
+                    }
+                }
+            } else { // Desktop (manual 'M' key)
+                let targetZombie = null;
+                let minDistance = Infinity;
+                for (const zombie of zombies) {
+                    const dist = Math.abs(zombie.x - (player.x + player.barrelLength / 2));
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        targetZombie = zombie;
+                    }
+                }
+                if (targetZombie) {
+                    targets.push(targetZombie);
+                }
+            }
+            
+            if (targets.length === 0) {
+                return;
+            }
+
+            // Fire from the first machine gun (top right of turret)
+            for (const target of targets) {
+                projectiles.push({
+                    x: player.x + player.width * 0.75 + 18,
+                    y: player.y + player.height * 0.1,
+                    width: LASER_WIDTH,
+                    height: LASER_HEIGHT,
+                    color: '#00ccff',
+                    speed: LASER_SPEED,
+                    damage: currentDamage,
+                    type: 'laser',
+                    targetY: target.y + target.height / 2 // Lasers aim at zombie's center Y
+                });
+            }
+
+            // If dual machine guns are enabled (Mk.III and above)
+            if (playerUpgradeLevel >= 3) {
+                for (const target of targets) {
+                    projectiles.push({
+                        x: player.x + player.width * 0.8 + 20,
+                        y: player.y + player.height * 0.25,
+                        width: LASER_WIDTH,
+                        height: LASER_HEIGHT,
+                        color: '#00ccff',
+                        speed: LASER_SPEED,
+                        damage: currentDamage,
+                        type: 'laser',
+                        targetY: target.y + target.height / 2
+                    });
+                    projectiles.push({
+                        x: player.x + player.width * 0.25 + 20,
+                        y: player.y + player.height * 0.25,
+                        width: LASER_WIDTH,
+                        height: LASER_HEIGHT,
+                        color: '#00ccff',
+                        speed: LASER_SPEED,
+                        damage: currentDamage,
+                        type: 'laser',
+                        targetY: target.y + target.height / 2
+                    });
+                }
+            }
+
+            player.canFireLaser = false;
+            player.currentLaserCooldown = LASER_COOLDOWN;
+        }
+
+        /**
+         * Fires a missile from missile pods.
+         */
+        function fireMissile() {
+            if (!gameRunning || gameOver || !player.canFireMissile || !TANK_UPGRADE_LEVELS[playerUpgradeLevel].missileEnabled) return;
+
+            const currentDamage = player.temporaryDamageBoostActive ? MISSILE_DAMAGE * 2 : MISSILE_DAMAGE;
+
+            let targetZombie = null;
+            let minDistance = Infinity;
+
+            for (const zombie of zombies) {
+                const dist = Math.abs(zombie.x - (player.x + player.barrelLength / 2));
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    targetZombie = zombie;
+                }
+            }
+
+            if (!targetZombie) {
+                return;
+            }
+
+            const launchPoints = [];
+            if (playerUpgradeLevel >= 4) {
+                launchPoints.push({ x: player.x + player.width * 0.05 + 30, y: player.y + player.height * 0.35 + MISSILE_HEIGHT / 2 });
+                launchPoints.push({ x: player.x + player.width - 30 - player.width * 0.05, y: player.y + player.height * 0.35 + MISSILE_HEIGHT / 2 });
+            }
+            if (playerUpgradeLevel >= 6) {
+                const turretCenterX = player.x - player.width / 2 + player.width * 0.6;
+                let currentTurretHeight = player.height * 0.45;
+                let turretTopWidth = player.width * 0.5;
+                if (playerUpgradeLevel < 2) { turretTopWidth = player.width * 0.4; }
+                else if (playerUpgradeLevel < 5) { turretTopWidth = player.width * 0.45; }
+                else { currentTurretHeight = player.height * 0.5; turretTopWidth = player.width * 0.5; }
+
+                launchPoints.push({ x: turretCenterX - turretTopWidth / 2 + 10 + 40, y: player.y - currentTurretHeight * 0.8 - 10 + MISSILE_HEIGHT / 2 });
+                launchPoints.push({ x: turretCenterX + turretTopWidth / 2 - 40 - 10 + 40, y: player.y - currentTurretHeight * 0.8 - 10 + MISSILE_HEIGHT / 2 });
+            }
+            
+            for (const launchPoint of launchPoints) {
+                projectiles.push({
+                    x: launchPoint.x,
+                    y: launchPoint.y,
+                    vx: MISSILE_SPEED_X,
+                    vy: MISSILE_SPEED_Y_INITIAL,
+                    targetX: targetZombie.x + targetZombie.width / 2,
+                    targetY: targetZombie.y + targetZombie.height / 2,
+                    width: MISSILE_WIDTH,
+                    height: MISSILE_HEIGHT,
+                    color: '#ff0000',
+                    damage: currentDamage,
+                    type: 'missile'
+                });
+            }
+
+            player.canFireMissile = false;
+            player.currentMissileCooldown = MISSILE_COOLDOWN;
+        }
+
+        /**
+         * Zombie tank fires a projectile at the player tank.
+         */
+        function zombieTankFire(zombieTank) {
+            if (!gameRunning || gameOver) return;
+
+            const projectileX = zombieTank.x - 10; // From left side of tank
+            const projectileY = zombieTank.y + zombieTank.height / 2;
+
+            projectiles.push({
+                x: projectileX,
+                y: projectileY,
+                vx: -ZOMBIE_TANK_PROJECTILE_SPEED, // Moves left towards player
+                vy: 0, // No vertical movement initially
+                size: ZOMBIE_TANK_PROJECTILE_SIZE,
+                color: '#800080', // Purple projectile
+                damage: ZOMBIE_TANK_PROJECTILE_DAMAGE,
+                type: 'zombieProjectile'
+            });
+        }
+
+
+        /**
+         * Starts the game loop.
+         */
+        function startGame() {
+            resetGame();
+            gameRunning = true;
+            if (startButton) startButton.style.display = 'none';
+            if (restartButton) restartButton.style.display = 'none';
+            if (pauseButton) pauseButton.style.display = 'block'; // Show pause button
+            if (shopButton) shopButton.style.display = 'block'; // Show shop button
+            lastZombieSpawnTime = performance.now();
+            lastUpdateTime = performance.now();
+            gameLoop();
+        }
+
+        /**
+         * Ends the game and displays the game over screen.
+         */
+        function endGame() {
+            gameOver = true;
+            gameRunning = false;
+            gamePaused = false; // Ensure game is unpaused
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            finalScoreDisplay.textContent = `Final Score: ${score}`;
+            gameOverWaveDisplay.textContent = `Survived Waves: ${currentWave}`;
+            finalBestScoreDisplay.textContent = `Best Score: ${bestScore}`;
+
+            gameOverScreen.style.display = 'flex';
+            if (restartButton) restartButton.style.display = 'block';
+            if (pauseButton) pauseButton.style.display = 'none'; // Hide pause button
+            if (shopButton) shopButton.style.display = 'none'; // Hide shop button
+        }
+
+        /**
+         * Toggles the game's pause state.
+         */
+        function togglePause() {
+            gamePaused = !gamePaused;
+            if (gamePaused) {
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                if (pauseButton) pauseButton.textContent = 'Resume';
+            } else {
+                lastUpdateTime = performance.now(); // Reset lastUpdateTime to prevent large deltaTime jump
+                gameLoop(lastUpdateTime);
+                if (pauseButton) pauseButton.textContent = 'Pause';
+            }
+        }
+
+        /**
+         * Opens the shop screen and pauses the game.
+         */
+        function openShop() {
+            if (!gameRunning || gameOver) return;
+            gamePaused = true;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            shopScreen.style.display = 'flex';
+            if (pauseButton) pauseButton.textContent = 'Resume'; // Set pause button to resume
+
+            // Update buy button states
+            updateShopButtonStates();
+        }
+
+        /**
+         * Closes the shop screen and resumes the game.
+         */
+        function closeShop() {
+            shopScreen.style.display = 'none';
+            gamePaused = false;
+            lastUpdateTime = performance.now();
+            gameLoop(lastUpdateTime);
+            if (pauseButton) pauseButton.textContent = 'Pause'; // Set pause button back to pause
+        }
+
+        /**
+         * Updates the enabled/disabled state of shop buttons based on current score.
+         */
+        function updateShopButtonStates() {
+            if (buyHealthPackBtn) buyHealthPackBtn.disabled = score < SHOP_ITEMS.healthPack.cost;
+            if (buyWallBtn) buyWallBtn.disabled = score < SHOP_ITEMS.reinforcedWall.cost;
+            if (buyOverchargeBtn) buyOverchargeBtn.disabled = score < SHOP_ITEMS.temporaryOvercharge.cost;
+            if (buyUAVBtn) buyUAVBtn.disabled = score < SHOP_ITEMS.automatedUAV.cost;
+        }
+
+        /**
+         * Handles buying items from the shop.
+         */
+        function buyItem(itemType) {
+            const item = SHOP_ITEMS[itemType];
+            if (score >= item.cost) {
+                score -= item.cost;
+                scoreDisplay.textContent = `Score: ${score}`;
+
+                switch (itemType) {
+                    case 'healthPack':
+                        player.health = Math.min(player.maxHealth, player.health + PLAYER_HP_REGEN_PER_HP_PACK);
+                        tankHealthDisplay.textContent = `Tank HP: ${player.health}`;
+                        break;
+                    case 'reinforcedWall':
+                        // Check if a wall already exists to prevent spamming
+                        if (walls.length === 0) {
+                            walls.push({
+                                x: DEFENSE_LINE_X - WALL_WIDTH, // Place wall just before defense line
+                                y: WALL_Y,
+                                width: WALL_WIDTH,
+                                height: WALL_HEIGHT,
+                                health: WALL_HEALTH,
+                                maxHealth: WALL_HEALTH
+                            });
+                            console.log("Reinforced Wall built!");
+                        } else {
+                            // If wall exists, maybe repair it or upgrade it
+                            const existingWall = walls[0];
+                            existingWall.health = Math.min(existingWall.maxHealth, existingWall.health + WALL_HEALTH * 0.5); // Repair 50% of wall HP
+                            console.log("Existing wall repaired!");
+                        }
+                        break;
+                    case 'temporaryOvercharge':
+                        player.temporaryDamageBoostActive = true;
+                        player.temporaryDamageBoostEndTime = performance.now() + item.duration;
+                        console.log("Temporary Overcharge activated!");
+                        break;
+                    case 'automatedUAV':
+                        player.uavActive = true;
+                        player.uavEndTime = performance.now() + item.duration;
+                        console.log("Automated UAV deployed!");
+                        break;
+                }
+                updateShopButtonStates(); // Update button states after purchase
+            } else {
+                console.log(`Not enough score to buy ${itemType}. Need ${item.cost}, have ${score}.`);
+            }
+        }
+
+
+        /**
+         * Advances to the next wave, increasing difficulty and victim count.
+         */
+        function nextWave() {
+            currentWave++;
+            waveDisplay.textContent = `Wave: ${currentWave}`;
+            zombieSpeed += 0.1;
+            zombieSpawnRate = Math.max(800, zombieSpawnRate - 50); // Minimum 800ms spawn rate
+            
+            if (currentWave % 2 === 0) { // Add a new victim every 2 waves
+                victims.push({
+                    x: DEFENSE_LINE_X - (VICTIM_WIDTH * 1.5 * (victims.length + 1)),
+                    y: VICTIM_Y,
+                    width: VICTIM_WIDTH,
+                    height: VICTIM_HEIGHT,
+                    health: 100,
+                    maxHealth: 100,
+                    isAlive: true
+                });
+            }
+            victimCountDisplay.textContent = `Victims: ${victims.filter(v => v.isAlive).length}`;
+
+            const nextZombieTierIndex = ZOMBIE_VISUAL_TIERS.findIndex(tier => currentWave >= tier.wave && currentWave < (ZOMBIE_VISUAL_TIERS[ZOMBIE_VISUAL_TIERS.indexOf(tier) + 1]?.wave || Infinity));
+            if (nextZombieTierIndex !== -1 && nextZombieTierIndex !== currentZombieTier) {
+                currentZombieTier = nextZombieTierIndex;
+                console.log(`Zombie visual tier upgraded to: ${ZOMBIE_VISUAL_TIERS[currentZombieTier].name}`);
+            }
+
+            const nextBackgroundThemeIndex = BACKGROUND_THEMES.findIndex(theme => currentWave >= theme.wave && currentWave < (BACKGROUND_THEMES[BACKGROUND_THEMES.indexOf(theme) + 1]?.wave || Infinity));
+            if (nextBackgroundThemeIndex !== -1 && nextBackgroundThemeIndex !== currentBackgroundThemeIndex) {
+                currentBackgroundThemeIndex = nextBackgroundThemeIndex;
+                console.log(`Background theme changed to: ${BACKGROUND_THEMES[currentBackgroundThemeIndex].name}`);
+            }
+
+            console.log(`Wave ${currentWave}: Zombie Speed = ${zombieSpeed.toFixed(1)}, Spawn Rate = ${zombieSpawnRate}ms`);
+        }
+
+        /**
+         * Spawns a new zombie (or zombie tank).
+         */
+        function spawnZombie() {
+            const randomStreetY = STREET_MIN_Y_DRAW + Math.random() * (STREET_MAX_Y_DRAW - STREET_MIN_Y_DRAW);
+            
+            if (currentWave >= ZOMBIE_TANK_SPAWN_WAVE && Math.random() < ZOMBIE_TANK_SPAWN_CHANCE) {
+                zombies.push({
+                    x: GAME_WIDTH,
+                    y: randomStreetY - ZOMBIE_TANK_HEIGHT,
+                    width: ZOMBIE_TANK_WIDTH,
+                    height: ZOMBIE_TANK_HEIGHT,
+                    health: ZOMBIE_TANK_HEALTH,
+                    maxHealth: ZOMBIE_TANK_HEALTH,
+                    speed: ZOMBIE_TANK_SPEED,
+                    type: 'zombieTank',
+                    currentFireCooldown: ZOMBIE_TANK_FIRE_RATE * Math.random() // Random initial cooldown
+                });
+            } else {
+                zombies.push({
+                    x: GAME_WIDTH,
+                    y: randomStreetY - ZOMBIE_HEIGHT,
+                    width: ZOMBIE_WIDTH,
+                    height: ZOMBIE_HEIGHT,
+                    health: ZOMBIE_INITIAL_HEALTH * (1 + (currentWave - 1) * 0.15),
+                    maxHealth: ZOMBIE_INITIAL_HEALTH * (1 + (currentWave - 1) * 0.15),
+                    speed: zombieSpeed,
+                    type: 'regular'
+                });
+            }
+        }
+
+        /**
+         * Creates blood particles at a given position.
+         */
+        function createBloodParticles(x, y) {
+            for (let i = 0; i < BLOOD_PARTICLE_COUNT; i++) {
+                bloodParticles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * BLOOD_PARTICLE_SPEED_MAX * 2,
+                    vy: (Math.random() - 0.5) * BLOOD_PARTICLE_SPEED_MAX * 2,
+                    life: BLOOD_PARTICLE_LIFESPAN,
+                    size: Math.random() * (BLOOD_PARTICLE_SIZE_MAX - BLOOD_PARTICLE_SIZE_MIN) + BLOOD_PARTICLE_SIZE_MIN,
+                    color: Math.random() > 0.5 ? '#8b0000' : '#b22222'
+                });
+            }
+        }
+
+        /**
+         * Updates the position and lifespan of all blood particles.
+         */
+        function updateBloodParticles(deltaTime) {
+            bloodParticles.forEach(p => {
+                p.x += p.vx * (deltaTime / 16);
+                p.y += p.vy * (deltaTime / 16);
+                p.vy += 0.2 * (deltaTime / 16);
+                p.life -= (deltaTime / 16);
+            });
+            bloodParticles = bloodParticles.filter(p => p.life > 0);
+        }
+
+        /**
+         * Creates explosion particles at a given position.
+         */
+        function createExplosionParticles(x, y) {
+            for (let i = 0; i < EXPLOSION_PARTICLE_COUNT; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * EXPLOSION_PARTICLE_SPEED_MAX;
+                explosions.push({
+                    x: x, y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: EXPLOSION_PARTICLE_LIFESPAN,
+                    size: Math.random() * (EXPLOSION_PARTICLE_SIZE_MAX - EXPLOSION_PARTICLE_SIZE_MIN) + EXPLOSION_PARTICLE_SIZE_MIN,
+                    color: ['#ff4500', '#ffa500', '#ffff00', '#8b0000'][Math.floor(Math.random() * 4)]
+                });
+            }
+        }
+
+        /**
+         * Updates the position and lifespan of all explosion particles.
+         */
+        function updateExplosionParticles(deltaTime) {
+            explosions.forEach(p => {
+                p.x += p.vx * (deltaTime / 16);
+                p.y += p.vy * (deltaTime / 16);
+                p.life -= (deltaTime / 16);
+                p.vx *= 0.98;
+                p.vy *= 0.98;
+            });
+            explosions = explosions.filter(p => p.life > 0);
+        }
+
+        /**
+         * Handles upgrading the tank's abilities and appearance.
+         */
+        function upgradeTank() {
+            const nextUpgradeLevel = playerUpgradeLevel + 1;
+
+            if (nextUpgradeLevel < TANK_UPGRADE_LEVELS.length && score >= UPGRADE_SCORE_THRESHOLDS[playerUpgradeLevel]) {
+                score -= UPGRADE_SCORE_THRESHOLDS[playerUpgradeLevel];
+                scoreDisplay.textContent = `Score: ${score}`;
+                
+                playerUpgradeLevel = nextUpgradeLevel;
+                const newStats = TANK_UPGRADE_LEVELS[playerUpgradeLevel];
+                player.barrelLength = newStats.barrelLength;
+                BULLET_SPEED = newStats.bulletSpeed;
+                BULLET_DAMAGE = newStats.bulletDamage;
+                FIRE_RATE_COOLDOWN = newStats.fireRate;
+
+                console.log(`Upgrade successful! Tank is now ${newStats.name}.`);
+            } else {
+                console.log("Upgrade failed: Not enough score or already at max level.");
+            }
+
+            if (playerUpgradeLevel < TANK_UPGRADE_LEVELS.length - 1) {
+                upgradeButton.textContent = `Upgrade Tank (${UPGRADE_SCORE_THRESHOLDS[playerUpgradeLevel]} pts)`;
+                upgradeButton.style.display = 'none';
+            } else {
+                upgradeButton.textContent = `Tank MAX!`;
+                upgradeButton.style.display = 'none';
+            }
+            updateShopButtonStates(); // Update shop buttons as score changes
+        }
+
+        /**
+         * Main game update logic.
+         */
+        function update(currentTime) {
+            if (!gameRunning || gamePaused || gameOver) return;
+
+            const deltaTime = currentTime - lastUpdateTime;
+            lastUpdateTime = currentTime;
+
+            // Update player temporary boosts
+            if (player.temporaryDamageBoostActive && currentTime > player.temporaryDamageBoostEndTime) {
+                player.temporaryDamageBoostActive = false;
+                console.log("Temporary Overcharge ended.");
+            }
+            if (player.uavActive && currentTime > player.uavEndTime) {
+                player.uavActive = false;
+                console.log("Automated UAV returned.");
+            }
+
+            tankHealthDisplay.textContent = `Tank HP: ${player.health}`;
+
+            if (playerUpgradeLevel < TANK_UPGRADE_LEVELS.length - 1 && score >= UPGRADE_SCORE_THRESHOLDS[playerUpgradeLevel]) {
+                upgradeAvailable = true;
+                if (upgradeButton) upgradeButton.style.display = 'block';
+            } else {
+                upgradeAvailable = false;
+                if (playerUpgradeLevel >= TANK_UPGRADE_LEVELS.length -1) { 
+                     if (upgradeButton) upgradeButton.style.display = 'none';
+                } else {
+                    if (upgradeButton) upgradeButton.style.display = 'none';
+                }
+            }
+
+            // Update tank movement
+            if (player.isMovingLeft) {
+                player.x = Math.max(player.x - TANK_MOVE_SPEED * (deltaTime / 16), player.width / 2);
+            } else if (player.isMovingRight) {
+                player.x = Math.min(player.x + TANK_MOVE_SPEED * (deltaTime / 16), GAME_WIDTH - player.width / 2);
+            }
+
+            if (player.isMovingUp) {
+                player.y = Math.max(player.y - TANK_MOVE_SPEED * (deltaTime / 16), STREET_MIN_Y_DRAW - player.height / 2);
+            } else if (player.isMovingDown) {
+                player.y = Math.min(player.y + TANK_MOVE_SPEED * (deltaTime / 16), STREET_MAX_Y_DRAW - player.height / 2);
+            }
+
+            // Update tread animation offset
+            if (player.isMovingLeft || player.isMovingRight || player.isMovingUp || player.isMovingDown) {
+                treadOffset = (treadOffset + TREAD_ANIMATION_SPEED * (deltaTime / 16));
+                if (treadOffset >= 15) treadOffset -= 15;
+            } else {
+                if (treadOffset !== 0) {
+                    const decay = TREAD_ANIMATION_SPEED * 0.5 * (deltaTime / 16);
+                    if (treadOffset > 0) treadOffset = Math.max(0, treadOffset - decay);
+                    else treadOffset = Math.min(0, treadOffset + decay);
+                    if (Math.abs(treadOffset) < 0.1) treadOffset = 0;
+                }
+            }
+
+            // Update primary bullet cooldown
+            if (!player.canFirePrimary) {
+                player.currentPrimaryCooldown -= deltaTime;
+                if (player.currentPrimaryCooldown <= 0) {
+                    player.canFirePrimary = true;
+                }
+            }
+            // Update laser cooldown
+            if (!player.canFireLaser) {
+                player.currentLaserCooldown -= deltaTime;
+                if (player.currentLaserCooldown <= 0) {
+                    player.canFireLaser = true;
+                }
+            }
+            // Update missile cooldown
+            if (!player.canFireMissile) {
+                player.currentMissileCooldown -= deltaTime;
+                if (player.currentMissileCooldown <= 0) {
+                    player.canFireMissile = true;
+                }
+            }
+
+            // Move projectiles
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                if (p.type === 'missile') {
+                    p.x += p.vx * (deltaTime / 16);
+                    p.vy += MISSILE_GRAVITY * (deltaTime / 16);
+                    p.y += p.vy * (deltaTime / 16);
+                    if (p.x < p.targetX) {
+                        const dx = p.targetX - p.x;
+                        const dy = p.targetY - p.y;
+                        const steeringFactor = 0.05;
+                        p.vy += (dy - p.vy) * steeringFactor * (deltaTime / 16);
+                        p.vy = Math.max(-MISSILE_SPEED_X, Math.min(MISSILE_SPEED_X, p.vy));
+                    }
+                } else if (p.type === 'zombieProjectile') {
+                    p.x += p.vx * (deltaTime / 16); // Move left
+                    p.y += p.vy * (deltaTime / 16);
+                    // Check collision with player tank
+                    if (p.x < player.x + player.width / 2 &&
+                        p.x + p.size > player.x - player.width / 2 &&
+                        p.y < player.y + player.height &&
+                        p.y + p.size > player.y) {
+                        player.health -= p.damage;
+                        tankHealthDisplay.textContent = `Tank HP: ${player.health}`;
+                        projectiles.splice(i, 1); // Remove projectile
+                        createExplosionParticles(p.x, p.y);
+                    }
+                } else { // Regular bullets and lasers
+                    p.x += p.speed * (deltaTime / 16);
+                }
+                // Remove projectiles that go off screen OR become non-finite
+                if (p.x < -p.width || p.x > GAME_WIDTH || p.y < -p.height || p.y > GAME_HEIGHT + p.height || !isFinite(p.x) || !isFinite(p.y)) {
+                    projectiles.splice(i, 1);
+                }
+            }
+
+            // Move zombies (horizontally)
+            for (let i = zombies.length - 1; i >= 0; i--) {
+                const zombie = zombies[i];
+                zombie.x -= zombie.speed * (deltaTime / 16);
+
+                if (zombie.type === 'zombieTank') {
+                    zombie.currentFireCooldown -= deltaTime;
+                    if (zombie.currentFireCooldown <= 0) {
+                        zombieTankFire(zombie);
+                        zombie.currentFireCooldown = ZOMBIE_TANK_FIRE_RATE;
+                    }
+                }
+
+                // Zombie-Wall/Victim collision
+                let collided = false;
+                // Check collision with walls first
+                for (const wall of walls) {
+                    if (zombie.x <= wall.x + wall.width && zombie.x + zombie.width >= wall.x &&
+                        zombie.y + zombie.height > wall.y && zombie.y < wall.y + wall.height) {
+                        
+                        wall.health -= (zombie.type === 'zombieTank' ? ZOMBIE_TANK_PROJECTILE_DAMAGE * 0.1 : 1); // Zombies chip away at walls
+                        if (wall.health <= 0) {
+                            walls = walls.filter(w => w !== wall); // Remove wall if destroyed
+                            createExplosionParticles(wall.x + wall.width / 2, wall.y + wall.height / 2);
+                            console.log("Wall destroyed!");
+                        }
+                        zombie.x += zombie.speed * (deltaTime / 16); // Push zombie back slightly to simulate collision
+                        collided = true;
+                        break;
+                    }
+                }
+
+                if (!collided && zombie.x <= DEFENSE_LINE_X) { // If no wall, check victims
+                    for (let vIndex = victims.length - 1; vIndex >= 0; vIndex--) {
+                        const victim = victims[vIndex];
+                        if (victim.isAlive) {
+                            if (zombie.x < victim.x + victim.width && zombie.x + zombie.width > victim.x &&
+                                zombie.y < victim.y + victim.height && zombie.y + zombie.height > victim.y) {
+
+                                victim.health -= VICTIM_DAMAGE_PER_ZOMBIE;
+                                if (victim.health <= 0) {
+                                    victim.isAlive = false;
+                                    player.health -= 25;
+                                    tankHealthDisplay.textContent = `Tank HP: ${player.health}`;
+                                    victimCountDisplay.textContent = `Victims: ${victims.filter(v => v.isAlive).length}`;
+                                }
+                                collided = true; // Zombie hit a victim
+                                break;
+                            }
+                        }
+                    }
+                    if (collided) {
+                        if (zombie.type === 'zombieTank') {
+                            zombie.health -= 50; // Zombie tank takes damage from hitting victims/objects
+                            if (zombie.health <= 0) {
+                                createBloodParticles(zombie.x + zombie.width / 2, zombie.y + zombie.height / 2);
+                                createExplosionParticles(zombie.x + zombie.width / 2, zombie.y + zombie.height / 2);
+                                zombies.splice(i, 1);
+                                score += 100 * DIFFICULTIES[currentDifficulty].scoreMultiplier;
+                                scoreDisplay.textContent = `Score: ${score}`;
+                            }
+                        } else {
+                            zombies.splice(i, 1);
+                            createBloodParticles(zombie.x + zombie.width / 2, zombie.y + zombie.height / 2);
+                        }
+                    }
+                }
+
+                // Tank-Zombie Collision (Tank can hull and kill zombies)
+                if (zombie.x < player.x + player.width / 2 && zombie.x + zombie.width > player.x - player.width / 2 &&
+                    zombie.y < player.y + player.height && zombie.y + zombie.height > player.y) {
+                    
+                    zombie.health -= PLAYER_COLLISION_DAMAGE_TO_ZOMBIE; // Tank deals damage by hulling
+                    if (zombie.health <= 0) {
+                        score += (zombie.type === 'zombieTank' ? 100 : 10) * DIFFICULTIES[currentDifficulty].scoreMultiplier;
+                        scoreDisplay.textContent = `Score: ${score}`;
+                        createBloodParticles(zombie.x + zombie.width / 2, zombie.y + zombie.height / 2);
+                        zombies.splice(i, 1);
+                    } else {
+                         // If zombie isn't dead, push it back slightly
+                         zombie.x += zombie.speed * 2 * (deltaTime / 16);
+                    }
+                    player.health -= (zombie.type === 'zombieTank' ? 10 : 5); // Tank also takes some damage from collision
+                    tankHealthDisplay.textContent = `Tank HP: ${player.health}`;
+                }
+            }
+
+            zombies = zombies.filter(zombie => zombie.x + zombie.width > 0);
+
+            // Projectile-Zombie collisions
+            for (let pIndex = projectiles.length - 1; pIndex >= 0; pIndex--) {
+                const p = projectiles[pIndex];
+                if (p.type === 'zombieProjectile') continue; // Zombie projectiles handled separately for player collision
+
+                for (let zIndex = zombies.length - 1; zIndex >= 0; zIndex--) {
+                    const zombie = zombies[zIndex];
+
+                    let projectileHit = false;
+                    if (p.type === 'bullet' || p.type === 'missile') { // Check AABB for bullet and missile
+                        if (p.x + p.width > zombie.x && p.x < zombie.x + zombie.width &&
+                            p.y + p.height > zombie.y && p.y < zombie.y + zombie.height) {
+                            projectileHit = true;
+                        }
+                    } else if (p.type === 'laser') { // Laser can be a thin line, check if its path intersects
+                         if (p.x + p.width > zombie.x && p.x < zombie.x + zombie.width &&
+                            p.y + p.height / 2 > zombie.y && p.y + p.height / 2 < zombie.y + zombie.height) {
+                            projectileHit = true;
+                        }
+                    }
+
+                    if (projectileHit) {
+                        zombie.health -= p.damage;
+                        if (p.type !== 'laser') { // Lasers can pierce, other projectiles are consumed
+                            projectiles.splice(pIndex, 1);
+                        }
+
+                        if (zombie.health <= 0) {
+                            score += (zombie.type === 'zombieTank' ? 100 : 10) * DIFFICULTIES[currentDifficulty].scoreMultiplier;
+                            scoreDisplay.textContent = `Score: ${score}`;
+                            createBloodParticles(zombie.x + zombie.width / 2, zombie.y + zombie.height / 2);
+                            if (p.type === 'missile') {
+                                createExplosionParticles(zombie.x + zombie.width / 2, zombie.y + zombie.height / 2);
+                            }
+                            zombies.splice(zIndex, 1);
+                        } else if (p.type === 'missile') {
+                            createExplosionParticles(p.x, p.y);
+                        }
+                        if (p.type !== 'laser') break; // Only hit one zombie per bullet/missile
+                    }
+                }
+            }
+
+            // Check for wave progression or new zombie spawn
+            if (zombies.length === 0 && (currentTime - lastZombieSpawnTime) > zombieSpawnRate && score >= currentWave * 100) {
+                nextWave();
+            } else if (zombies.length === 0 && (currentTime - lastZombieSpawnTime) > zombieSpawnRate) {
+                spawnZombie();
+                lastZombieSpawnTime = currentTime;
+            }
+
+            // Spawn new zombies if overdue (even if still zombies on screen, but after wave check)
+            if (currentTime - lastZombieSpawnTime > zombieSpawnRate && zombies.length < 10) { // Limit max zombies on screen
+                spawnZombie();
+                lastZombieSpawnTime = currentTime;
+            }
+
+            // Update particles
+            updateBloodParticles(deltaTime);
+            updateExplosionParticles(deltaTime);
+
+            // Game Over conditions: All victims dead OR Tank health is 0
+            if (victims.filter(v => v.isAlive).length === 0 || player.health <= 0) {
+                endGame();
+            }
+        }
+
+        /**
+         * Main game loop.
+         */
+        function gameLoop(currentTime) {
+            if (!gameOver && !gamePaused) {
+                update(currentTime);
+                draw();
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // --- Event Listeners ---
+
+        // Tank movement (keyboard)
+        document.addEventListener('keydown', (e) => {
+            if (!gameRunning || gameOver || gamePaused) return;
+            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+                player.isMovingLeft = true;
+            } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+                player.isMovingRight = true;
+            } else if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') {
+                player.isMovingUp = true;
+            } else if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') {
+                player.isMovingDown = true;
+            } else if (e.key.toLowerCase() === 'm') {
+                fireLaser(); // Manual fire for desktop
+            } else if (e.key.toLowerCase() === 'r') {
+                fireMissile(); // Manual fire for desktop
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                firePrimaryBullet();
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (!gameRunning || gameOver || gamePaused) return;
+            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+                player.isMovingLeft = false;
+            } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+                player.isMovingRight = false;
+            } else if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') {
+                player.isMovingUp = false;
+            } else if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') {
+                player.isMovingDown = false;
+            }
+        });
+
+        // Shooting (Desktop: click on canvas) - Only fires primary weapon
+        window.addEventListener('click', (e) => {
+            if (!gameRunning || gameOver || gamePaused) return;
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            const isCanvasClick = clickX >= 0 && clickX <= GAME_WIDTH && clickY >= 0 && clickY <= GAME_HEIGHT;
+
+            if (isCanvasClick) {
+                firePrimaryBullet();
+            }
+        });
+
+        // --- Mobile Control Buttons Event Listeners ---
+        function bindMovementButton(button, directionFlag) {
+            if (!button) return;
+            button.addEventListener('touchstart', (e) => { e.preventDefault(); player[directionFlag] = true; }, { passive: false });
+            button.addEventListener('touchend', (e) => { e.preventDefault(); player[directionFlag] = false; }, { passive: false });
+            button.addEventListener('mousedown', (e) => { e.preventDefault(); player[directionFlag] = true; });
+            button.addEventListener('mouseup', (e) => { e.preventDefault(); player[directionFlag] = false; });
+            button.addEventListener('mouseleave', (e) => { e.preventDefault(); player[directionFlag] = false; });
+        }
+
+
+        // --- Firebase Initialization ---
+        window.onload = async function() {
+            // Assign DOM elements
+            canvas = document.getElementById('gameCanvas');
+            if (!canvas) {
+                console.error("Canvas element not found! Cannot initialize game.");
+                userIdDisplay.textContent = `User ID: Canvas Error`;
+                return;
+            }
+            ctx = canvas.getContext('2d');
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+
+            scoreDisplay = document.getElementById('scoreDisplay');
+            bestScoreDisplay = document.getElementById('bestScoreDisplay');
+            tankHealthDisplay = document.getElementById('tankHealthDisplay');
+            victimCountDisplay = document.getElementById('victimCountDisplay');
+            waveDisplay = document.getElementById('waveDisplay');
+            startButton = document.getElementById('startButton');
+            upgradeButton = document.getElementById('upgradeButton');
+            restartButton = document.getElementById('restartButton');
+            gameOverScreen = document.getElementById('game-over-screen');
+            finalScoreDisplay = document.getElementById('final-score');
+            gameOverWaveDisplay = document.getElementById('game-over-wave');
+            finalBestScoreDisplay = document.getElementById('final-best-score');
+            userIdDisplay = document.getElementById('userIdDisplay');
+            startScreen = document.getElementById('start-screen');
+            easyModeBtn = document.getElementById('easyModeBtn');
+            mediumModeBtn = document.getElementById('mediumModeBtn');
+            hardModeBtn = document.getElementById('hardModeBtn');
+            difficultyDisplay = document.getElementById('difficultyDisplay');
+            pauseButton = document.getElementById('pauseButton');
+            shopButton = document.getElementById('shopButton');
+            shopScreen = document.getElementById('shop-screen');
+            closeShopButton = document.getElementById('closeShopButton');
+            buyHealthPackBtn = document.getElementById('buyHealthPackBtn');
+            buyWallBtn = document.getElementById('buyWallBtn');
+            buyOverchargeBtn = document.getElementById('buyOverchargeBtn');
+            buyUAVBtn = document.getElementById('buyUAVBtn');
+
+
+            moveUpBtn = document.getElementById('moveUpBtn');
+            moveDownBtn = document.getElementById('moveDownBtn');
+            moveLeftBtn = document.getElementById('moveLeftBtn');
+            moveRightBtn = document.getElementById('moveRightBtn');
+            shootBtn = document.getElementById('shootBtn');
+
+            // Bind mobile movement buttons
+            bindMovementButton(moveUpBtn, 'isMovingUp');
+            bindMovementButton(moveDownBtn, 'isMovingDown');
+            bindMovementButton(moveLeftBtn, 'isMovingLeft');
+            bindMovementButton(moveRightBtn, 'isMovingRight');
+
+            if (shootBtn) {
+                shootBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    firePrimaryBullet();
+                });
+            }
+
+            // Game control buttons
+            if (startButton) startButton.addEventListener('click', startGame);
+            if (restartButton) restartButton.addEventListener('click', startGame);
+            if (upgradeButton) upgradeButton.addEventListener('click', upgradeTank);
+            if (pauseButton) pauseButton.addEventListener('click', togglePause);
+            if (shopButton) shopButton.addEventListener('click', openShop);
+            if (closeShopButton) closeShopButton.addEventListener('click', closeShop);
+
+            // Shop item buttons
+            if (buyHealthPackBtn) buyHealthPackBtn.addEventListener('click', () => buyItem('healthPack'));
+            if (buyWallBtn) buyWallBtn.addEventListener('click', () => buyItem('reinforcedWall'));
+            if (buyOverchargeBtn) buyOverchargeBtn.addEventListener('click', () => buyItem('temporaryOvercharge'));
+            if (buyUAVBtn) buyUAVBtn.addEventListener('click', () => buyItem('automatedUAV'));
+
+
+            // Difficulty selection
+            if (easyModeBtn) easyModeBtn.addEventListener('click', () => { applyDifficulty('easy'); startScreen.style.display = 'none'; startGame(); });
+            if (mediumModeBtn) mediumModeBtn.addEventListener('click', () => { applyDifficulty('medium'); startScreen.style.display = 'none'; startGame(); });
+            if (hardModeBtn) hardModeBtn.addEventListener('click', () => { applyDifficulty('hard'); startScreen.style.display = 'none'; startGame(); });
+
+            // Initialize with default difficulty settings but don't start the game until selected
+            applyDifficulty(currentDifficulty);
+            // Display start screen initially
+            startScreen.style.display = 'flex';
+
+
+            try {
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                if (!firebaseConfig.projectId && firebaseConfig !== {}) {
+                    console.warn("Firebase 'projectId' is missing in the provided configuration. Score saving may not work correctly. Please ensure __firebase_config is properly set in the environment.");
+                    userIdDisplay.textContent = `User ID: Firebase (No ProjectId)`;
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (!initialAuthCheckCompleted) {
+                        if (user) {
+                            userId = user.uid;
+                            isFirebaseReady = true;
+                            if (userIdDisplay) userIdDisplay.textContent = `User ID: ${userId.substring(0, 8)}...`;
+                            await getHighScore();
+                        } else {
+                            try {
+                                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                    await signInWithCustomToken(auth, __initial_auth_token);
+                                    userId = auth.currentUser?.uid;
+                                    isFirebaseReady = true;
+                                    if (userIdDisplay) userIdDisplay.textContent = `User ID: ${userId ? userId.substring(0, 8) + '...' : 'Anonymous'}`;
+                                    await getHighScore();
+                                } else {
+                                    await signInAnonymously(auth);
+                                    userId = auth.currentUser?.uid;
+                                    isFirebaseReady = true;
+                                    if (userIdDisplay) userIdDisplay.textContent = `User ID: ${userId.substring(0, 8)}... (Anonymous)`;
+                                    await getHighScore();
+                                }
+                            } catch (e) {
+                                console.warn("Authentication failed, falling back to anonymous:", e);
+                                try {
+                                    await signInAnonymously(auth);
+                                    userId = auth.currentUser?.uid;
+                                    isFirebaseReady = true;
+                                    if (userIdDisplay) userIdDisplay.textContent = `User ID: ${userId.substring(0, 8)}... (Anonymous)`;
+                                    await getHighScore();
+                                } catch (anonymousError) {
+                                    console.error("Anonymous sign-in also failed:", anonymousError);
+                                    if (userIdDisplay) userIdDisplay.textContent = `User ID: Not Signed In (Auth Failed)`;
+                                    isFirebaseReady = false;
+                                }
+                            }
+                        }
+                        initialAuthCheckCompleted = true;
+                        resetGame(); // Perform initial reset and draw, but game is not running yet (waiting for difficulty selection)
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization failed (Caught in top-level try/catch):", error);
+                if (userIdDisplay) userIdDisplay.textContent = `User ID: Firebase Init Error`;
+                isFirebaseReady = false;
+            }
+        };
+    </script>
+</body>
+</html>
